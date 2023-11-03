@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+from sys import stdin
 from typing import TextIO, Optional, Any
 from collections.abc import Iterable, Hashable
 
@@ -182,6 +183,19 @@ class Problem:
     def __init__(self, dimension, distance_matrix):
         self.dimension = dimension              # Number of cities
         self.distance_matrix = distance_matrix  # Distance matrix where distance_matrix[i][j] is the distance between city i and city j
+
+
+    def __str__(self):
+        string = f'dimension: {self.dimension}\ndistance matrix:\n'
+
+        for line in range(self.dimension):
+            for column in range(self.dimension):
+                string += str(self.distance_matrix[line][column]) + ' '
+            string += '\n'
+
+        return string
+
+
         
 
     @classmethod
@@ -189,7 +203,20 @@ class Problem:
         """
         Create a problem from a text I/O source `f`
         """
-        raise NotImplementedError
+
+        file_data = [str(i) for i in f.read().split()]
+        file_iterator = iter(file_data) 
+
+        for data in file_iterator:
+            if data == 'DIMENSION:':
+                dimension = int(next(file_iterator))
+            if data == 'EDGE_WEIGHT_SECTION':
+                break
+
+        # creates a matrix with dimension x dimension
+        distance_matrix = [[int(next(file_iterator)) for i in range(dimension)] for j in range(dimension)] 
+
+        return cls(dimension, distance_matrix)
 
 
     def empty_solution(self) -> Solution:
@@ -197,3 +224,8 @@ class Problem:
         Create an empty solution (i.e. with no components).
         """
         raise NotImplementedError
+
+if __name__ == '__main__':
+    problem = Problem.from_textio(stdin)
+    print(problem)
+
