@@ -213,8 +213,8 @@ class Problem:
             if data == 'EDGE_WEIGHT_SECTION':
                 break
 
-        # creates a matrix with dimension x dimension
-        distance_matrix = [[int(next(file_iterator)) for i in range(dimension)] for j in range(dimension)] 
+        # creates a tuple matrix with dimension x dimension
+        distance_matrix = tuple(tuple(int(next(file_iterator)) for i in range(dimension)) for j in range(dimension))
 
         return cls(dimension, distance_matrix)
 
