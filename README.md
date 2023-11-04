@@ -2,7 +2,7 @@
 
 **Contributors:**
 
-- [Alexandre Andrade]()
+- [Alexandre Andrade](https://github.com/AlexandreAndrade00)
 - [Thiago Lütz Dias](https://github.com/lutzzdias)
 
 The Traveling Salesman Problem (TSP) is a classic combinatorial optimization challenge in computer science. It revolves around determining the shortest possible route that visits a set of cities, returning to the starting point while adhering to the constraint that each city must be visited exactly once. In the realm of computational complexity, TSP is classified as an NP-hard problem, which means finding an optimal solution for large instances is a formidable task, often requiring exponential time.
