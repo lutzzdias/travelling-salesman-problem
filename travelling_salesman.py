@@ -34,6 +34,13 @@ class LocalMove:
 
 
 class Solution:
+    def __init__(self, problem: Problem,  visited_cities: tuple(int), unvisited_cities: tuple(int), distance: int, path: tuple(int)):
+        self.problem: Problem = problem
+        self.visited_cities: tuple(int) = visited_cities
+        self.unvisited_cities: tuple(int) = unvisited_cities
+        self.distance: int = distance
+        self.path: tuple(int) = path
+
     def output(self) -> str:
         """
         Generate the output string for this solution
