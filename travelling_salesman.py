@@ -35,12 +35,22 @@ class LocalMove:
 
 
 class Solution:
-    def __init__(self, problem: Problem,  visited_cities: tuple(int), unvisited_cities: tuple(int), distance: int, path: tuple(int)):
+    def __init__(
+        self,
+        problem: Problem,
+        visited_cities: tuple(int),
+        unvisited_cities: tuple(int),
+        distance: int,
+        path: tuple(int),
+    ):
         self.problem: Problem = problem
         self.visited_cities: tuple(int) = visited_cities
         self.unvisited_cities: tuple(int) = unvisited_cities
         self.distance: int = distance
         self.path: tuple(int) = path
+
+    def __str__(self):
+        return f"distance: {self.distance}\npath: {self.path}\n"
 
     def output(self) -> str:
         """
@@ -173,17 +183,17 @@ class Solution:
 
 class Problem:
     def __init__(self, dimension, distance_matrix):
-        self.dimension = dimension              # Number of cities
+        self.dimension = dimension  # Number of cities
         # Distance matrix where distance_matrix[i][j] is the distance between city i and city j
         self.distance_matrix = distance_matrix
 
     def __str__(self):
-        string = f'dimension: {self.dimension}\ndistance matrix:\n'
+        string = f"dimension: {self.dimension}\ndistance matrix:\n"
 
         for line in range(self.dimension):
             for column in range(self.dimension):
-                string += str(self.distance_matrix[line][column]) + ' '
-            string += '\n'
+                string += str(self.distance_matrix[line][column]) + " "
+            string += "\n"
 
         return string
 
@@ -197,14 +207,16 @@ class Problem:
         file_iterator = iter(file_data)
 
         for data in file_iterator:
-            if data == 'DIMENSION:':
+            if data == "DIMENSION:":
                 dimension = int(next(file_iterator))
-            if data == 'EDGE_WEIGHT_SECTION':
+            if data == "EDGE_WEIGHT_SECTION":
                 break
 
         # creates a tuple matrix with dimension x dimension
-        distance_matrix = tuple(tuple(int(next(file_iterator))
-                                for i in range(dimension)) for j in range(dimension))
+        distance_matrix = tuple(
+            tuple(int(next(file_iterator)) for i in range(dimension))
+            for j in range(dimension)
+        )
 
         return cls(dimension, distance_matrix)
 
@@ -221,6 +233,11 @@ class Problem:
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
+
     print(problem)
+
+    solution = problem.empty_solution()
+
+    print(solution)
