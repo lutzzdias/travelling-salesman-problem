@@ -212,7 +212,13 @@ class Problem:
         """
         Create an empty solution (i.e. with no components).
         """
-        raise NotImplementedError
+        return Solution(
+            problem=self,
+            visited_cities=(0),
+            unvisited_cities=tuple(range(1, self.dimension)),
+            distance=0,
+            path=(0,),
+        )
 
 
 if __name__ == '__main__':
