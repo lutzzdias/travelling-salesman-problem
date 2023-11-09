@@ -23,6 +23,7 @@ from collections.abc import Iterable, Hashable
 
 Objective = Any
 
+
 class Component:
     @property
     def cid(self) -> Hashable:
@@ -47,7 +48,6 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def copy(self) -> Solution:
         """
         Return a copy of this solution.
@@ -57,13 +57,11 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def is_feasible(self) -> bool:
         """
         Return whether the solution is feasible or not
         """
         raise NotImplementedError
-
 
     def objective(self) -> Optional[Objective]:
         """
@@ -72,14 +70,12 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def lower_bound(self) -> Optional[Objective]:
         """
         Return the lower bound value for this solution if defined,
         otherwise return None
         """
         raise NotImplementedError
-
 
     def add_moves(self) -> Iterable[Component]:
         """
@@ -88,14 +84,12 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def local_moves(self) -> Iterable[LocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves that can be applied to the solution
         """
         raise NotImplementedError
-
 
     def random_local_move(self) -> Optional[LocalMove]:
         """
@@ -106,7 +100,6 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def random_local_moves_wor(self) -> Iterable[LocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
@@ -115,14 +108,12 @@ class Solution:
         """
         raise NotImplementedError
 
-            
     def heuristic_add_move(self) -> Optional[Component]:
         """
         Return the next component to be added based on some heuristic
         rule.
         """
         raise NotImplementedError
-
 
     def add(self, component: Component) -> None:
         """
@@ -133,7 +124,6 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def step(self, lmove: LocalMove) -> None:
         """
         Apply a local move to the solution.
@@ -143,7 +133,6 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
         """
         Return the objective value increment resulting from applying a
@@ -151,7 +140,6 @@ class Solution:
         applying the local move return None.
         """
         raise NotImplementedError
-
 
     def objective_incr_add(self, component: Component) -> Optional[Objective]:
         """
@@ -161,7 +149,6 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def lower_bound_incr_add(self, component: Component) -> Optional[Objective]:
         """
         Return the lower bound increment resulting from adding a
@@ -170,14 +157,12 @@ class Solution:
         """
         raise NotImplementedError
 
-
     def perturb(self, ks: int) -> None:
         """
         Perturb the solution in place. The amount of perturbation is
         controlled by the parameter ks (kick strength)
         """
         raise NotImplementedError
-
 
     def components(self) -> Iterable[Component]:
         """
@@ -189,8 +174,8 @@ class Solution:
 class Problem:
     def __init__(self, dimension, distance_matrix):
         self.dimension = dimension              # Number of cities
-        self.distance_matrix = distance_matrix  # Distance matrix where distance_matrix[i][j] is the distance between city i and city j
-
+        # Distance matrix where distance_matrix[i][j] is the distance between city i and city j
+        self.distance_matrix = distance_matrix
 
     def __str__(self):
         string = f'dimension: {self.dimension}\ndistance matrix:\n'
@@ -202,9 +187,6 @@ class Problem:
 
         return string
 
-
-        
-
     @classmethod
     def from_textio(cls, f: TextIO) -> Problem:
         """
@@ -212,7 +194,7 @@ class Problem:
         """
 
         file_data = [str(i) for i in f.read().split()]
-        file_iterator = iter(file_data) 
+        file_iterator = iter(file_data)
 
         for data in file_iterator:
             if data == 'DIMENSION:':
@@ -221,10 +203,10 @@ class Problem:
                 break
 
         # creates a tuple matrix with dimension x dimension
-        distance_matrix = tuple(tuple(int(next(file_iterator)) for i in range(dimension)) for j in range(dimension))
+        distance_matrix = tuple(tuple(int(next(file_iterator))
+                                for i in range(dimension)) for j in range(dimension))
 
         return cls(dimension, distance_matrix)
-
 
     def empty_solution(self) -> Solution:
         """
@@ -232,7 +214,7 @@ class Problem:
         """
         raise NotImplementedError
 
+
 if __name__ == '__main__':
     problem = Problem.from_textio(stdin)
     print(problem)
-
