@@ -98,7 +98,9 @@ class Solution:
         Return an iterable (generator, iterator, or iterable object)
         over all components that can be added to the solution
         """
-        raise NotImplementedError
+
+        for city in self.unvisited_cities:
+            yield Component(city)
 
     def local_moves(self) -> Iterable[LocalMove]:
         """
