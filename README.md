@@ -11,7 +11,7 @@ In the traditional TSP, the distances between cities are symmetric, meaning the 
 
 This repo will implement the ATSP following a predetermined API for relations with the outside world. It is the result of the final project from the Heuristic Methods subject in the University of Coimbra.
 
-## Commit pattern
+## Commit conventions
 
 ```
 tag: what was done (in the imperative verb tense)
@@ -27,9 +27,14 @@ tag: what was done (in the imperative verb tense)
 - build: build components, eg. build tool, ci pipeline, dependencies, etc
 - ops: operational components, eg. infrastructure, deployment, recovery, etc
 - chore: miscellaneous commits, eg. modifying .gitignore, etc
+- merge: default merge message with a few adaptations (see below)
 
 **Example**
 
 ```
 feat: implement from_textio within the problem class
+merge: #X from <repo/branch>
 ```
+
+Where `X` is the PR number and `repo/branch` is the repo and branch that was 
+merged into the current branch. such as `lutzzdias/11-solution-add_moves`.
