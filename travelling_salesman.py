@@ -25,6 +25,12 @@ Objective = Any
 
 
 class Component:
+    def __init__(self, id: int):
+        self.id = id
+
+    def __str__(self):
+        return f"id: {self.id}"
+
     @property
     def cid(self) -> Hashable:
         raise NotImplementedError
