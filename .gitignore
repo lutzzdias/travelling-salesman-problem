@@ -1,4 +1,5 @@
 .vscode/*
+.mypy_cache/
 
 # Exceptions
 !.vscode/settings.json
