@@ -38,19 +38,19 @@ class Solution:
     def __init__(
         self,
         problem: Problem,
-        visited_cities: tuple(int),
-        unvisited_cities: tuple(int),
-        distance: int,
-        path: tuple(int),
+        visited_cities: set(int),
+        unvisited_cities: set(int),
+        total_distance: int,
+        path: list(int),
     ):
         self.problem: Problem = problem
-        self.visited_cities: tuple(int) = visited_cities
-        self.unvisited_cities: tuple(int) = unvisited_cities
-        self.distance: int = distance
-        self.path: tuple(int) = path
+        self.visited_cities: set(int) = visited_cities
+        self.unvisited_cities: set(int) = unvisited_cities
+        self.total_distance: int = total_distance
+        self.path: list(int) = path
 
     def __str__(self):
-        return f"distance: {self.distance}\npath: {self.path}\n"
+        return f"distance: {self.total_distance}\npath: {self.path}\n"
 
     def output(self) -> str:
         """
@@ -226,10 +226,10 @@ class Problem:
         """
         return Solution(
             problem=self,
-            visited_cities=(0),
-            unvisited_cities=tuple(range(1, self.dimension)),
-            distance=0,
-            path=(0,),
+            visited_cities={0},
+            unvisited_cities=set(range(1, self.dimension)),
+            total_distance=0,
+            path=[0],
         )
 
 
