@@ -245,9 +245,11 @@ class Problem:
 
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
-
     print(problem)
 
     solution = problem.empty_solution()
-
     print(solution)
+
+    components = solution.add_moves()
+    for comp in components:
+        print(comp)
