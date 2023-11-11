@@ -48,12 +48,14 @@ class Solution:
         unvisited_cities: Set[int],
         total_distance: int,
         path: List[int],
+        lower_bound: int,
     ):
         self.problem: Problem = problem
         self.visited_cities: Set[int] = visited_cities
         self.unvisited_cities: Set[int] = unvisited_cities
         self.total_distance: int = total_distance
         self.path: List[int] = path
+        self.lower_bound_value: int = lower_bound
 
     def __str__(self):
         return f"distance: {self.total_distance}\npath: {self.path}\n"
@@ -195,6 +197,18 @@ class Problem:
         # Distance matrix where distance_matrix[i][j] is the distance between city i and city j
         self.distance_matrix = distance_matrix
 
+        self.lower_bound: int = self._initialize_lower_bound()
+
+    def _initialize_lower_bound(self) -> int:
+        """
+        Initialize the lower bound for the problem
+        """
+        # find the smallest possible distance between two cities and multiply it
+        # by the number of cities
+
+        # get the min of every row, get the min of the minimums and multiply by the number of cities
+        return min(min(row) for row in self.distance_matrix) * self.dimension
+
     def __str__(self):
         string = f"dimension: {self.dimension}\ndistance matrix:\n"
 
@@ -240,16 +254,15 @@ class Problem:
             unvisited_cities=set(range(1, self.dimension)),
             total_distance=0,
             path=[0],
+            lower_bound=self.lower_bound,
         )
 
 
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
-    print(problem)
+    # print(problem)
 
     solution = problem.empty_solution()
-    print(solution)
+    # print(solution)
 
-    components = solution.add_moves()
-    for comp in components:
-        print(comp)
+    print(solution.lower_bound_value)
