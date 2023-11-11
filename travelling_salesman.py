@@ -18,13 +18,19 @@
 from __future__ import annotations
 
 from sys import stdin
-from typing import TextIO, Optional, Any
+from typing import TextIO, Optional, Any, Set, List, Tuple
 from collections.abc import Iterable, Hashable
 
 Objective = Any
 
 
 class Component:
+    def __init__(self, id: int):
+        self.id = id
+
+    def __str__(self):
+        return f"id: {self.id}"
+
     @property
     def cid(self) -> Hashable:
         raise NotImplementedError
@@ -38,16 +44,16 @@ class Solution:
     def __init__(
         self,
         problem: Problem,
-        visited_cities: set(int),
-        unvisited_cities: set(int),
+        visited_cities: Set[int],
+        unvisited_cities: Set[int],
         total_distance: int,
-        path: list(int),
+        path: List[int],
     ):
         self.problem: Problem = problem
-        self.visited_cities: set(int) = visited_cities
-        self.unvisited_cities: set(int) = unvisited_cities
+        self.visited_cities: Set[int] = visited_cities
+        self.unvisited_cities: Set[int] = unvisited_cities
         self.total_distance: int = total_distance
-        self.path: list(int) = path
+        self.path: List[int] = path
 
     def __str__(self):
         return f"distance: {self.total_distance}\npath: {self.path}\n"
@@ -92,7 +98,9 @@ class Solution:
         Return an iterable (generator, iterator, or iterable object)
         over all components that can be added to the solution
         """
-        raise NotImplementedError
+
+        for city in self.unvisited_cities:
+            yield Component(city)
 
     def local_moves(self) -> Iterable[LocalMove]:
         """
@@ -182,7 +190,7 @@ class Solution:
 
 
 class Problem:
-    def __init__(self, dimension, distance_matrix):
+    def __init__(self, dimension: int, distance_matrix: Tuple[Tuple[int, ...], ...]):
         self.dimension = dimension  # Number of cities
         # Distance matrix where distance_matrix[i][j] is the distance between city i and city j
         self.distance_matrix = distance_matrix
@@ -203,6 +211,8 @@ class Problem:
         Create a problem from a text I/O source `f`
         """
 
+        dimension: int = 0
+
         file_data = [str(i) for i in f.read().split()]
         file_iterator = iter(file_data)
 
@@ -214,8 +224,8 @@ class Problem:
 
         # creates a tuple matrix with dimension x dimension
         distance_matrix = tuple(
-            tuple(int(next(file_iterator)) for i in range(dimension))
-            for j in range(dimension)
+            tuple(int(next(file_iterator)) for _ in range(dimension))
+            for __ in range(dimension)
         )
 
         return cls(dimension, distance_matrix)
@@ -235,9 +245,11 @@ class Problem:
 
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
-
     print(problem)
 
     solution = problem.empty_solution()
-
     print(solution)
+
+    components = solution.add_moves()
+    for comp in components:
+        print(comp)
