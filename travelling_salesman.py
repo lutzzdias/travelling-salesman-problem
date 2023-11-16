@@ -142,7 +142,18 @@ class Solution:
         Note: this invalidates any previously generated components and
         local moves.
         """
-        raise NotImplementedError
+
+        city_id: int = component.id
+
+        self.visited_cities.add(city_id)
+
+        self.unvisited_cities.remove(city_id)
+
+        self.path.append(city_id)
+
+        self.total_distance += self.problem.distance_matrix[self.path[-2]][city_id]
+
+        # TODO lower bound
 
     def step(self, lmove: LocalMove) -> None:
         """
