@@ -150,12 +150,8 @@ class Solution:
         distance: int = self.problem.distance_matrix[component.arc[0]][city_id]
 
         self.total_distance += distance
+        self.lower_bound_value += distance
 
-        self.lower_bound_value = (
-            self.lower_bound_value
-            - self.problem.lower_bound // self.problem.dimension
-            + distance
-        )
 
     def step(self, lmove: LocalMove) -> None:
         """
@@ -216,11 +212,8 @@ class Problem:
         """
         Initialize the lower bound for the problem
         """
-        # find the smallest possible distance between two cities and multiply it
-        # by the number of cities
 
-        # get the min of every row, get the min of the minimums and multiply by the number of cities
-        return min(min(row) for row in self.distance_matrix) * self.dimension
+        return 0
 
     def __str__(self):
         string = f"dimension: {self.dimension}\ndistance matrix:\n"
