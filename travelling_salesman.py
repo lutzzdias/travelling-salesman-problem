@@ -29,8 +29,7 @@ class Component:
         self.arc = (source, dest)
 
     def __str__(self):
-        return (f"source: {self.arc[0]}"
-                f"dest: {self.arc[1]}")
+        return f"source: {self.arc[0]}" f"dest: {self.arc[1]}"
 
     @property
     def cid(self) -> Hashable:
@@ -57,7 +56,7 @@ class Solution:
         self.lower_bound_value: int = lower_bound
 
     def __str__(self):
-        return f"distance: {self.total_distance}\npath: {self.path}\n"
+        return f"distance: {self.total_distance}\npath: {self.visited_cities}\n"
 
     def output(self) -> str:
         """
@@ -148,7 +147,6 @@ class Solution:
 
         self.unvisited_cities.remove(city_id)
 
-
         distance: int = self.problem.distance_matrix[component.arc[0]][city_id]
 
         self.total_distance += distance
@@ -190,7 +188,7 @@ class Solution:
         component. If the lower bound is not defined after adding the
         component, return None.
         """
-        raise NotImplementedError
+        return self.problem.distance_matrix[component.arc[0]][component.arc[1]]
 
     def perturb(self, ks: int) -> None:
         """
