@@ -151,9 +151,15 @@ class Solution:
 
         self.path.append(city_id)
 
-        self.total_distance += self.problem.distance_matrix[self.path[-2]][city_id]
+        distance: int = self.problem.distance_matrix[self.path[-2]][city_id]
 
-        # TODO lower bound
+        self.total_distance += distance
+
+        self.lower_bound_value = (
+            self.lower_bound_value
+            - self.problem.lower_bound / self.problem.dimension
+            + distance
+        )
 
     def step(self, lmove: LocalMove) -> None:
         """
