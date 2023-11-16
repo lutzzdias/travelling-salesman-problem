@@ -93,7 +93,7 @@ class Solution:
         Return the lower bound value for this solution if defined,
         otherwise return None
         """
-        raise NotImplementedError
+        return self.lower_bound_value
 
     def add_moves(self) -> Iterable[Component]:
         """
@@ -142,7 +142,24 @@ class Solution:
         Note: this invalidates any previously generated components and
         local moves.
         """
-        raise NotImplementedError
+
+        city_id: int = component.id
+
+        self.visited_cities.add(city_id)
+
+        self.unvisited_cities.remove(city_id)
+
+        self.path.append(city_id)
+
+        distance: int = self.problem.distance_matrix[self.path[-2]][city_id]
+
+        self.total_distance += distance
+
+        self.lower_bound_value = (
+            self.lower_bound_value
+            - self.problem.lower_bound / self.problem.dimension
+            + distance
+        )
 
     def step(self, lmove: LocalMove) -> None:
         """
