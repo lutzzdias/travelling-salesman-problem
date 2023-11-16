@@ -93,7 +93,7 @@ class Solution:
         Return the lower bound value for this solution if defined,
         otherwise return None
         """
-        raise NotImplementedError
+        return self.lower_bound_value
 
     def add_moves(self) -> Iterable[Component]:
         """
