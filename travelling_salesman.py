@@ -45,19 +45,15 @@ class Solution:
     def __init__(
         self,
         problem: Problem,
-        visited_cities: Set[int],
+        visited_cities: List[int],
         unvisited_cities: Set[int],
-        current_city: int,
         total_distance: int,
-        path: Set[Tuple[int, int]],
         lower_bound: int,
     ):
         self.problem: Problem = problem
-        self.visited_cities: Set[int] = visited_cities
+        self.visited_cities: List[int] = visited_cities
         self.unvisited_cities: Set[int] = unvisited_cities
-        self.current_city: int = current_city
         self.total_distance: int = total_distance
-        self.path: Set[Tuple[int, int]] = path
         self.lower_bound_value: int = lower_bound
 
     def __str__(self):
@@ -105,7 +101,7 @@ class Solution:
         """
 
         for city in self.unvisited_cities:
-            yield Component(self.current_city, city)
+            yield Component(self.visited_cities[-1], city)
 
     def local_moves(self) -> Iterable[LocalMove]:
         """
@@ -148,11 +144,10 @@ class Solution:
 
         city_id: int = component.arc[1]
 
-        self.visited_cities.add(city_id)
+        self.visited_cities.append(city_id)
 
         self.unvisited_cities.remove(city_id)
 
-        self.path.add(component.arc)
 
         distance: int = self.problem.distance_matrix[component.arc[0]][city_id]
 
@@ -270,11 +265,9 @@ class Problem:
         """
         return Solution(
             problem=self,
-            visited_cities={0},
+            visited_cities=[0],
             unvisited_cities=set(range(1, self.dimension)),
-            current_city=0,
             total_distance=0,
-            path=set(),
             lower_bound=self.lower_bound,
         )
 
