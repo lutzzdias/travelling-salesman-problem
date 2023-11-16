@@ -25,11 +25,12 @@ Objective = Any
 
 
 class Component:
-    def __init__(self, id: int):
-        self.id = id
+    def __init__(self, source: int, dest: int):
+        self.arc = (source, dest)
 
     def __str__(self):
-        return f"id: {self.id}"
+        return (f"source: {self.arc[0]}"
+                f"dest: {self.arc[1]}")
 
     @property
     def cid(self) -> Hashable:
@@ -44,17 +45,15 @@ class Solution:
     def __init__(
         self,
         problem: Problem,
-        visited_cities: Set[int],
+        visited_cities: List[int],
         unvisited_cities: Set[int],
         total_distance: int,
-        path: List[int],
         lower_bound: int,
     ):
         self.problem: Problem = problem
-        self.visited_cities: Set[int] = visited_cities
+        self.visited_cities: List[int] = visited_cities
         self.unvisited_cities: Set[int] = unvisited_cities
         self.total_distance: int = total_distance
-        self.path: List[int] = path
         self.lower_bound_value: int = lower_bound
 
     def __str__(self):
@@ -102,7 +101,7 @@ class Solution:
         """
 
         for city in self.unvisited_cities:
-            yield Component(city)
+            yield Component(self.visited_cities[-1], city)
 
     def local_moves(self) -> Iterable[LocalMove]:
         """
@@ -143,21 +142,20 @@ class Solution:
         local moves.
         """
 
-        city_id: int = component.id
+        city_id: int = component.arc[1]
 
-        self.visited_cities.add(city_id)
+        self.visited_cities.append(city_id)
 
         self.unvisited_cities.remove(city_id)
 
-        self.path.append(city_id)
 
-        distance: int = self.problem.distance_matrix[self.path[-2]][city_id]
+        distance: int = self.problem.distance_matrix[component.arc[0]][city_id]
 
         self.total_distance += distance
 
         self.lower_bound_value = (
             self.lower_bound_value
-            - self.problem.lower_bound / self.problem.dimension
+            - self.problem.lower_bound // self.problem.dimension
             + distance
         )
 
@@ -267,10 +265,9 @@ class Problem:
         """
         return Solution(
             problem=self,
-            visited_cities={0},
+            visited_cities=[0],
             unvisited_cities=set(range(1, self.dimension)),
             total_distance=0,
-            path=[0],
             lower_bound=self.lower_bound,
         )
 
