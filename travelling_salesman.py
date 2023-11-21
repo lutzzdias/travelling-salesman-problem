@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from sys import stdin
 from typing import TextIO, Optional, Any, Set, List, Tuple
 from collections.abc import Iterable, Hashable
 
@@ -261,13 +260,3 @@ class Problem:
             total_distance=0,
             lower_bound=self.lower_bound,
         )
-
-
-if __name__ == "__main__":
-    problem = Problem.from_textio(stdin)
-    # print(problem)
-
-    solution = problem.empty_solution()
-    # print(solution)
-
-    print(solution.lower_bound_value)
