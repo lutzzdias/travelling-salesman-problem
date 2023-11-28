@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import TextIO, Optional, Any, Set, List, Tuple
 from collections.abc import Iterable, Hashable
+from copy import deepcopy
 
 Objective = Any
 
@@ -70,7 +71,7 @@ class Solution:
         Note: changes to the copy must not affect the original
         solution. However, this does not need to be a deepcopy.
         """
-        raise NotImplementedError
+        return deepcopy(self)
 
     def is_feasible(self) -> bool:
         """
