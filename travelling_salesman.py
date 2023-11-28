@@ -83,7 +83,7 @@ class Solution:
         Return the objective value for this solution if defined, otherwise
         should return None
         """
-        raise NotImplementedError
+        return self.lower_bound_value
 
     def lower_bound(self) -> Optional[Objective]:
         """
@@ -150,7 +150,6 @@ class Solution:
 
         self.total_distance += distance
         self.lower_bound_value += distance
-
 
     def step(self, lmove: LocalMove) -> None:
         """
