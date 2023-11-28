@@ -127,6 +127,53 @@ def grasp(problem, budget, alpha=0):
     return best_solution
 
 
+def beam_search(problem, beam_width=10):
+    solution = problem.empty_solution()
+
+    best_solution, best_objective = (
+        (solution, solution.objective()) if solution.is_feasible() else (None, None)
+    )
+
+    current = [(solution.lower_bound(), solution)]  # root node
+
+    while True:
+        children = []
+
+        for lower_bound, solution in current:  # breadth-first search
+            for component in solution.add_moves():
+                children.append(
+                    (
+                        lower_bound + solution.lower_bound_incr_add(component),
+                        solution,
+                        component,
+                    )
+                )
+
+        if children == []:
+            return best_solution
+
+        children.sort(key=operator.itemgetter(0))
+
+        current = []
+
+        for lower_bound, solution, ccomponent in children[:beam_width]:  # next level
+            solution = solution.copy()
+
+            solution.add(component)
+
+            if solution.is_feasible():
+                objective = solution.objective()
+
+                if best_objective is None or objective < best_objective:
+                    best_solution = solution
+
+                    best_objective = objective
+
+            current.append((lower_bound, solution))
+
+    return best_solution
+
+
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
@@ -136,6 +183,9 @@ if __name__ == "__main__":
 
     solution3 = grasp(problem, 10, alpha=0.1)
 
+    # solution4 = beam_search(problem, beam_width=10)
+
     print(solution1.lower_bound_value)
     print(solution2.lower_bound_value)
     print(solution3.lower_bound_value)
+    # print(solution4.lower_bound_value)
