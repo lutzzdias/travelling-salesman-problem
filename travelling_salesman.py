@@ -111,12 +111,52 @@ class Solution:
         for city in self.unvisited_cities:
             yield Component(self.visited_cities[-1], city)
 
+    # https://tsp-basics.blogspot.com/2017/03/3-opt-iterative-general-idea.html
     def local_moves(self) -> Iterable[LocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves that can be applied to the solution
         """
-        raise NotImplementedError
+        dimension: int = self.problem.dimension
+
+        for counter_1 in range(dimension):
+            # first cut after i
+            i = counter_1
+
+            X1 = visited_cities[i]
+            X2 = visited_cities[(i + 1) % dimension]
+
+            for counter_2 in range(1, dimension - 2):
+                # second cut after j
+                j = (i + counter_2) % dimension
+
+                Y1 = visited_cities[j]
+                Y2 = visited_cities[(j + 1) % dimension]
+
+                for counter_3 in range(counter_2 + 1, dimension):
+                    # third cut after k
+                    k = (i + counter_3) % dimension
+
+                    Z1 = visited_cities[k]
+                    Z2 = visited_cities[(k + 1) % dimension]
+
+                    expected_gain = self._swap_gain(X1, X2, Y1, Y2, Z1, Z2)
+
+                    if expected_gain > 0:
+                        yield LocalMove(X1, X2, Y1, Y2, Z1, Z2)
+
+    def _swap_gain(self, X1: int, X2: int, Y1: int, Y2: int, Z1: int, Z2: int) -> int:
+        distance_matrix = self.problem.distance_matrix
+
+        add_distance: int = (
+            distance_matrix[X1][Y2] + distance_matrix[Y1][Z2] + distance_matrix[Z1][X2]
+        )
+
+        del_distance: int = (
+            distance_matrix[X1][X2] + distance_matrix[Y1][Y2] + distance_matrix[Z1][Z2]
+        )
+
+        return del_distance - add_distance
 
     def random_local_move(self) -> Optional[LocalMove]:
         """
