@@ -37,7 +37,16 @@ class Component:
 
 
 class LocalMove:
-    ...
+    def __init__(self, X1: int, X2: int, Y1: int, Y2: int, Z1: int, Z2: int):
+        self.X1: int = X1
+        self.X2: int = X2
+        self.Y1: int = Y1
+        self.Y2: int = Y2
+        self.Z1: int = Z1
+        self.Z2: int = Z2
+
+    def __str__(self):
+        return f"permutation {X2}->...->{Y1} <--> {Y2}->...->{Z1}"
 
 
 class Solution:
