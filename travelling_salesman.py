@@ -20,6 +20,8 @@ from __future__ import annotations
 from typing import TextIO, Optional, Any, Set, List, Tuple
 from collections.abc import Iterable, Hashable
 from copy import deepcopy
+import random
+import time
 
 Objective = Any
 
@@ -165,7 +167,31 @@ class Solution:
         Note: repeated calls to this method may return the same
         local move.
         """
-        raise NotImplementedError
+        dimension: int = self.problem.dimension
+
+        tic = time.perf_counter_ns()
+
+        # 10 ms
+        while time.perf_counter_ns - tic < 10000000:
+            X1_id = random.randint(0, dimension)
+            Y1_id = random.randint(1, dimension - 2)
+            Z1_id = random.randint(Y1_id + 1, dimension)
+
+            X1 = visited_cities[X1_id]
+            X2 = visited_cities[(X1_id + 1) % dimension]
+
+            Y1 = visited_cities[Y1_id]
+            Y2 = visited_cities[(Y1_id + 1) % dimension]
+
+            Z1 = visited_cities[Z1_id]
+            Z2 = visited_cities[(Z1_id + 1) % dimension]
+
+            expected_gain = self._swap_gain(X1, X2, Y1, Y2, Z1, Z2)
+
+            if expected_gain > 0:
+                return LocalMove(X1, X2, Y1, Y2, Z1, Z2)
+
+        return None
 
     def random_local_moves_wor(self) -> Iterable[LocalMove]:
         """
