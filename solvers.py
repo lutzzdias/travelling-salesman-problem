@@ -174,6 +174,19 @@ def beam_search(problem, beam_width=10):
     return best_solution
 
 
+def local_search(solution: Solution):
+    available_local_moves = solution.local_moves()
+
+    next_move: LocalMove = next(available_local_moves, None)
+
+    while next_move is not None:
+        solution.step(next_move)
+
+        available_local_moves = solution.local_moves()
+
+        next_move: LocalMove = next(available_local_moves, None)
+
+
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
@@ -189,3 +202,12 @@ if __name__ == "__main__":
     print(solution2.lower_bound_value)
     print(solution3.lower_bound_value)
     # print(solution4.lower_bound_value)
+
+    local_search(solution1)
+    print(solution1.lower_bound_value)
+
+    local_search(solution2)
+    print(solution2.lower_bound_value)
+
+    local_search(solution3)
+    print(solution3.lower_bound_value)
