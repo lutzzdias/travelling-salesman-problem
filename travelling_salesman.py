@@ -121,26 +121,17 @@ class Solution:
         """
         dimension: int = self.problem.dimension
 
-        for counter_1 in range(dimension):
-            # first cut after i
-            i = counter_1
+        for i in range(dimension - 5):
+            X1 = self.visited_cities[i]
+            X2 = self.visited_cities[i + 1]
 
-            X1 = visited_cities[i]
-            X2 = visited_cities[(i + 1) % dimension]
+            for j in range(i + 2, dimension - 3):
+                Y1 = self.visited_cities[j]
+                Y2 = self.visited_cities[j + 1]
 
-            for counter_2 in range(1, dimension - 2):
-                # second cut after j
-                j = (i + counter_2) % dimension
-
-                Y1 = visited_cities[j]
-                Y2 = visited_cities[(j + 1) % dimension]
-
-                for counter_3 in range(counter_2 + 1, dimension):
-                    # third cut after k
-                    k = (i + counter_3) % dimension
-
-                    Z1 = visited_cities[k]
-                    Z2 = visited_cities[(k + 1) % dimension]
+                for k in range(j + 2, dimension - 1):
+                    Z1 = self.visited_cities[k]
+                    Z2 = self.visited_cities[k + 1]
 
                     expected_gain = self._swap_gain(X1, X2, Y1, Y2, Z1, Z2)
 
@@ -173,18 +164,18 @@ class Solution:
 
         # 10 ms
         while time.perf_counter_ns - tic < 10000000:
-            X1_id = random.randint(0, dimension)
-            Y1_id = random.randint(1, dimension - 2)
-            Z1_id = random.randint(Y1_id + 1, dimension)
+            X1_id = random.randint(0, dimension - 5)
+            Y1_id = random.randint(X1_id + 2, dimension - 3)
+            Z1_id = random.randint(Y1_id + 2, dimension - 1)
 
             X1 = visited_cities[X1_id]
-            X2 = visited_cities[(X1_id + 1) % dimension]
+            X2 = visited_cities[X1_id + 1]
 
             Y1 = visited_cities[Y1_id]
-            Y2 = visited_cities[(Y1_id + 1) % dimension]
+            Y2 = visited_cities[Y1_id + 1]
 
             Z1 = visited_cities[Z1_id]
-            Z2 = visited_cities[(Z1_id + 1) % dimension]
+            Z2 = visited_cities[Z1_id + 1]
 
             expected_gain = self._swap_gain(X1, X2, Y1, Y2, Z1, Z2)
 
