@@ -26,6 +26,18 @@ import time
 Objective = Any
 
 
+def sparse_fisher_yates_iter(n):
+    p: dict = {}
+
+    for i in range(n - 1, -1, -1):
+        r = random.randrange(i + 1)
+
+        yield p.get(r, r)
+
+        if i != r:
+            p[r] = p.get(i, i)
+
+
 class Component:
     def __init__(self, source: int, dest: int):
         self.arc = (source, dest)
@@ -88,14 +100,14 @@ class Solution:
         """
         Return whether the solution is feasible or not
         """
-        raise NotImplementedError
+        return len(self.unvisited_cities) == 0
 
     def objective(self) -> Optional[Objective]:
         """
         Return the objective value for this solution if defined, otherwise
         should return None
         """
-        return self.lower_bound_value
+        return self.total_distance
 
     def lower_bound(self) -> Optional[Objective]:
         """
@@ -133,23 +145,12 @@ class Solution:
                     Z1 = self.visited_cities[k]
                     Z2 = self.visited_cities[k + 1]
 
-                    expected_gain = self._swap_gain(X1, X2, Y1, Y2, Z1, Z2)
+                    local_move = LocalMove(X1, X2, Y1, Y2, Z1, Z2)
+
+                    expected_gain = self.objective_incr_local(local_move)
 
                     if expected_gain > 0:
-                        yield LocalMove(X1, X2, Y1, Y2, Z1, Z2)
-
-    def _swap_gain(self, X1: int, X2: int, Y1: int, Y2: int, Z1: int, Z2: int) -> int:
-        distance_matrix = self.problem.distance_matrix
-
-        add_distance: int = (
-            distance_matrix[X1][Y2] + distance_matrix[Y1][Z2] + distance_matrix[Z1][X2]
-        )
-
-        del_distance: int = (
-            distance_matrix[X1][X2] + distance_matrix[Y1][Y2] + distance_matrix[Z1][Z2]
-        )
-
-        return del_distance - add_distance
+                        yield local_move
 
     def random_local_move(self) -> Optional[LocalMove]:
         """
@@ -177,10 +178,12 @@ class Solution:
             Z1 = visited_cities[Z1_id]
             Z2 = visited_cities[Z1_id + 1]
 
-            expected_gain = self._swap_gain(X1, X2, Y1, Y2, Z1, Z2)
+            local_move = LocalMove(X1, X2, Y1, Y2, Z1, Z2)
+
+            expected_gain = self.objective_incr_local(local_move)
 
             if expected_gain > 0:
-                return LocalMove(X1, X2, Y1, Y2, Z1, Z2)
+                return local_move
 
         return None
 
@@ -190,7 +193,13 @@ class Solution:
         over all local moves (in random order) that can be applied to
         the solution.
         """
-        raise NotImplementedError
+
+        local_moves = list(self.local_moves())
+
+        random_indexes = sparse_fisher_yates_iter(len(local_moves))
+
+        for i in random_indexes:
+            yield local_moves[i]
 
     def heuristic_add_move(self) -> Optional[Component]:
         """
@@ -245,9 +254,7 @@ class Solution:
             + self.visited_cities[indexes[5] :]
         )
 
-        distance_difference = self._swap_gain(
-            lmove.X1, lmove.X2, lmove.Y1, lmove.Y2, lmove.Z1, lmove.Z2
-        )
+        distance_difference = self.objective_incr_local(lmove)
 
         self.visited_cities = updated_visited_cities
 
@@ -260,7 +267,21 @@ class Solution:
         local move. If the objective value is not defined after
         applying the local move return None.
         """
-        raise NotImplementedError
+        distance_matrix = self.problem.distance_matrix
+
+        add_distance: int = (
+            distance_matrix[lmove.X1][lmove.Y2]
+            + distance_matrix[lmove.Y1][lmove.Z2]
+            + distance_matrix[lmove.Z1][lmove.X2]
+        )
+
+        del_distance: int = (
+            distance_matrix[lmove.X1][lmove.X2]
+            + distance_matrix[lmove.Y1][lmove.Y2]
+            + distance_matrix[lmove.Z1][lmove.Z2]
+        )
+
+        return del_distance - add_distance
 
     def objective_incr_add(self, component: Component) -> Optional[Objective]:
         """
