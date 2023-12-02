@@ -234,7 +234,34 @@ class Solution:
         Note: this invalidates any previously generated components and
         local moves.
         """
-        raise NotImplementedError
+
+        borders: Tuple[int] = (
+            lmove.X1,
+            lmove.X2,
+            lmove.Y1,
+            lmove.Y2,
+            lmove.Z1,
+            lmove.Z2,
+        )
+
+        indexes = list(map(lambda x: self.visited_cities.index(x), borders))
+
+        # abc -> acb
+        updated_visited_cities = (
+            self.visited_cities[: indexes[0] + 1]
+            + self.visited_cities[indexes[3] : indexes[4] + 1]
+            + self.visited_cities[indexes[1] : indexes[2] + 1]
+            + self.visited_cities[indexes[5] :]
+        )
+
+        distance_difference = self._swap_gain(
+            lmove.X1, lmove.X2, lmove.Y1, lmove.Y2, lmove.Z1, lmove.Z2
+        )
+
+        self.visited_cities = updated_visited_cities
+
+        self.total_distance -= distance_difference
+        self.lower_bound_value -= distance_difference
 
     def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
         """
