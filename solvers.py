@@ -174,15 +174,38 @@ def beam_search(problem, beam_width=10):
     return best_solution
 
 
-def local_search(solution: Solution):
-    available_local_moves = solution.local_moves()
+def local_search_first(solution: Solution):
+    available_local_moves = solution.random_local_moves_wor()
 
     next_move: LocalMove = next(available_local_moves, None)
 
     while next_move is not None:
         solution.step(next_move)
 
-        available_local_moves = solution.local_moves()
+        available_local_moves = solution.random_local_moves_wor()
+
+        next_move: LocalMove = next(available_local_moves, None)
+
+
+def local_search_best(solution: Solution):
+    available_local_moves = solution.random_local_moves_wor()
+
+    next_move: LocalMove = next(available_local_moves, None)
+
+    while next_move is not None:
+        best_move = next_move
+        best_increment = solution.objective_incr_local(best_move)
+
+        for move in available_local_moves:
+            increment = solution.objective_incr_local(move)
+
+            if increment > best_increment:
+                best_move = move
+                best_increment = solution.objective_incr_local(best_move)
+
+        solution.step(next_move)
+
+        available_local_moves = solution.random_local_moves_wor()
 
         next_move: LocalMove = next(available_local_moves, None)
 
@@ -192,22 +215,27 @@ if __name__ == "__main__":
 
     solution1 = greedy_construction(problem)
 
-    solution2 = greedy_randomized_adaptive_construction(problem, alpha=0.1)
+    # solution2 = greedy_randomized_adaptive_construction(problem, alpha=0.1)
 
-    solution3 = grasp(problem, 10, alpha=0.1)
+    # solution3 = grasp(problem, 10, alpha=0.1)
 
-    # solution4 = beam_search(problem, beam_width=10)
+    # solution4 = beam_search(problem, beam_width=100)
 
     print(solution1.lower_bound_value)
-    print(solution2.lower_bound_value)
-    print(solution3.lower_bound_value)
+    # print(solution2.lower_bound_value)
+    # print(solution3.lower_bound_value)
     # print(solution4.lower_bound_value)
 
-    local_search(solution1)
-    print(solution1.lower_bound_value)
+    solution1_copy = solution1.copy()
 
-    local_search(solution2)
-    print(solution2.lower_bound_value)
+    local_search_first(solution1)
+    local_search_best(solution1_copy)
 
-    local_search(solution3)
-    print(solution3.lower_bound_value)
+    print(solution1.objective())
+    print(solution1_copy.objective())
+
+    # local_search_first(solution2)
+    # print(solution2.lower_bound_value)
+
+    # local_search_first(solution3)
+    # print(solution3.lower_bound_value)
