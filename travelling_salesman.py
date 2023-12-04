@@ -147,10 +147,7 @@ class Solution:
 
                     local_move = LocalMove(X1, X2, Y1, Y2, Z1, Z2)
 
-                    expected_gain = self.objective_incr_local(local_move)
-
-                    if expected_gain > 0:
-                        yield local_move
+                    yield local_move
 
     def random_local_move(self) -> Optional[LocalMove]:
         """
@@ -180,10 +177,7 @@ class Solution:
 
             local_move = LocalMove(X1, X2, Y1, Y2, Z1, Z2)
 
-            expected_gain = self.objective_incr_local(local_move)
-
-            if expected_gain > 0:
-                return local_move
+            return local_move
 
         return None
 

@@ -180,9 +180,10 @@ def local_search_first(solution: Solution):
     next_move: LocalMove = next(available_local_moves, None)
 
     while next_move is not None:
-        solution.step(next_move)
+        if solution.objective_incr_local(next_move) > 0:
+            solution.step(next_move)
 
-        available_local_moves = solution.random_local_moves_wor()
+            available_local_moves = solution.random_local_moves_wor()
 
         next_move: LocalMove = next(available_local_moves, None)
 
@@ -203,7 +204,10 @@ def local_search_best(solution: Solution):
                 best_move = move
                 best_increment = solution.objective_incr_local(best_move)
 
-        solution.step(next_move)
+        if best_increment <= 0:
+            break
+
+        solution.step(best_move)
 
         available_local_moves = solution.random_local_moves_wor()
 
