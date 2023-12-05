@@ -125,7 +125,6 @@ class Solution:
         for city in self.unvisited_cities:
             yield Component(self.visited_cities[-1], city)
 
-    # https://tsp-basics.blogspot.com/2017/03/3-opt-iterative-general-idea.html
     def local_moves(self) -> Iterable[LocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
