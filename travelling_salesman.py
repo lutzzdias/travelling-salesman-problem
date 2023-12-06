@@ -19,7 +19,6 @@ from __future__ import annotations
 
 from typing import TextIO, Optional, Any, Set, List, Tuple
 from collections.abc import Iterable, Hashable
-from copy import deepcopy
 import random
 import time
 
@@ -85,7 +84,12 @@ class Solution:
         """
         Generate the output string for this solution
         """
-        raise NotImplementedError
+        path: str = (
+            "->".join(map(str, self.visited_cities))
+            + f"->{str(self.visited_cities[0])}"
+        )
+
+        return f"The shortest path is {path} with a total distance of {self.total_distance}."
 
     def copy(self) -> Solution:
         """
@@ -94,7 +98,13 @@ class Solution:
         Note: changes to the copy must not affect the original
         solution. However, this does not need to be a deepcopy.
         """
-        return deepcopy(self)
+        return Solution(
+            self.problem,
+            self.visited_cities.copy(),
+            self.unvisited_cities.copy(),
+            self.total_distance,
+            self.lower_bound_value,
+        )
 
     def is_feasible(self) -> bool:
         """
@@ -282,7 +292,7 @@ class Solution:
         component. If the objective value is not defined after adding the
         component, return None.
         """
-        raise NotImplementedError
+        return self.problem.distance_matrix[component.arc[0]][component.arc[1]]
 
     def lower_bound_incr_add(self, component: Component) -> Optional[Objective]:
         """
@@ -303,7 +313,8 @@ class Solution:
         """
         Returns an iterable to the components of a solution
         """
-        raise NotImplementedError
+        for i in range(0, len(self.visited_cities) - 1):
+            yield Component(self.visited_cities[i], self.visited_cities[i + 1])
 
 
 class Problem:

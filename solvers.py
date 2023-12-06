@@ -232,11 +232,13 @@ if __name__ == "__main__":
 
     solution1_copy = solution1.copy()
 
+    print(solution1_copy)
+
     local_search_first(solution1)
     local_search_best(solution1_copy)
 
-    print(solution1.objective())
-    print(solution1_copy.objective())
+    print(solution1.output())
+    print(solution1_copy.output())
 
     # local_search_first(solution2)
     # print(solution2.lower_bound_value)
