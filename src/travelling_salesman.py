@@ -20,7 +20,8 @@ from __future__ import annotations
 from typing import TextIO, Optional, Any, Set, List, Tuple
 from collections.abc import Iterable, Hashable
 import time
-from atsp_3opt import LocalMove, Atsp3Opt
+from local_solvers.atsp_3opt import Atsp3Opt
+from local_solvers.atsp_aco import Atsp3Aco
 
 Objective = Any
 
@@ -37,7 +38,7 @@ class Component:
         raise NotImplementedError
 
 
-class Solution(Atsp3Opt):
+class Solution(Atsp3Aco):
     def __init__(
         self,
         problem: Problem,
@@ -51,6 +52,7 @@ class Solution(Atsp3Opt):
         self.unvisited_cities: Set[int] = unvisited_cities
         self.total_distance: int = total_distance
         self.lower_bound_value: int = lower_bound
+        Atsp3Aco.__init__(self)
 
     def __str__(self):
         return f"distance: {self.total_distance}\npath: {self.visited_cities}\n"
@@ -135,6 +137,14 @@ class Solution(Atsp3Opt):
 
         self.total_distance += distance
         self.lower_bound_value += distance
+
+        if len(self.unvisited_cities) == 0:
+            self.total_distance += self.problem.distance_matrix[city_id][
+                self.visited_cities[0]
+            ]
+            self.lower_bound_value += self.problem.distance_matrix[city_id][
+                self.visited_cities[0]
+            ]
 
     def objective_incr_add(self, component: Component) -> Optional[Objective]:
         """
