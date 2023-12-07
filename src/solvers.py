@@ -4,6 +4,7 @@ import random
 import time
 from sys import stdin
 from travelling_salesman import Problem, Solution
+from local_solvers.atsp_aco import Atsp3Aco, LocalMove3Aco
 
 
 def greedy_construction(problem: Problem) -> Solution:
@@ -214,31 +215,59 @@ def local_search_best(solution: Solution):
         next_move: LocalMove = next(available_local_moves, None)
 
 
+def ACO(solution: Solution) -> Solution:
+    best_solution = solution.copy()
+
+    ITERATIONS: int = 50
+
+    for iteration in range(ITERATIONS):
+        cycles = list(solution.local_moves())
+
+        # elitism
+        cycles.append(LocalMove3Aco(solution.visited_cities, solution.objective()))
+
+        cycles.sort(key=lambda x: x.distance)
+
+        # select cycles for the step
+        cycles = cycles[: solution.ants_per_iteration // 2]
+
+        solution.step(cycles)
+
+        if solution.objective() < best_solution.objective():
+            best_solution = solution.copy()
+
+    return best_solution
+
+
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
-    solution1 = greedy_construction(problem)
+    # solution1 = greedy_construction(problem)
 
     # solution2 = greedy_randomized_adaptive_construction(problem, alpha=0.1)
 
-    # solution3 = grasp(problem, 10, alpha=0.1)
+    solution3 = grasp(problem, 10, alpha=0.1)
 
     # solution4 = beam_search(problem, beam_width=100)
 
-    print(solution1.lower_bound_value)
+    # print(solution1.output())
     # print(solution2.lower_bound_value)
-    # print(solution3.lower_bound_value)
+    print(solution3.output())
     # print(solution4.lower_bound_value)
 
-    solution1_copy = solution1.copy()
+    # solution1_copy = solution1.copy()
 
-    print(solution1_copy)
+    # print(solution1_copy)
 
-    local_search_first(solution1)
-    local_search_best(solution1_copy)
+    # local_search_first(solution1)
+    # local_search_best(solution1_copy)
 
-    print(solution1.output())
-    print(solution1_copy.output())
+    # print(solution1.output())
+    # print(solution1_copy.output())
+
+    solution3 = ACO(solution3)
+
+    print(solution3.output())
 
     # local_search_first(solution2)
     # print(solution2.lower_bound_value)
