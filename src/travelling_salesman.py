@@ -19,9 +19,7 @@ from __future__ import annotations
 
 from typing import TextIO, Optional, Any, Set, List, Tuple
 from collections.abc import Iterable, Hashable
-import time
-from local_solvers.atsp_3opt import Atsp3Opt
-from local_solvers.atsp_aco import Atsp3Aco
+from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
 
 Objective = Any
 
@@ -38,24 +36,36 @@ class Component:
         raise NotImplementedError
 
 
-class Solution(Atsp3Aco):
+class LocalMove:
+    def __init__(self, city_id: int, destination_index: int):
+        self.city_id: int = city_id
+        self.destination_index: int = destination_index
+
+    def __str__(self):
+        return f"city_id: {self.city_id}" f"destination_index: {self.destination_index}"
+
+
+class Solution:
     def __init__(
         self,
         problem: Problem,
         visited_cities: List[int],
         unvisited_cities: Set[int],
         total_distance: int,
-        lower_bound: int,
+        lower_bound: float,
     ):
         self.problem: Problem = problem
         self.visited_cities: List[int] = visited_cities
         self.unvisited_cities: Set[int] = unvisited_cities
         self.total_distance: int = total_distance
-        self.lower_bound_value: int = lower_bound
-        Atsp3Aco.__init__(self)
+        self.lower_bound_value: float = lower_bound
+        self.current_shortest_in: List[int] = [0 for _ in range(self.problem.dimension)]
+        self.current_shortest_out: List[int] = [
+            0 for _ in range(self.problem.dimension)
+        ]
 
     def __str__(self):
-        return f"distance: {self.total_distance}\npath: {self.visited_cities}\n"
+        return f"distance: {self.total_distance}" f"path: {self.visited_cities}"
 
     def output(self) -> str:
         """
@@ -66,7 +76,7 @@ class Solution(Atsp3Aco):
             + f"->{str(self.visited_cities[0])}"
         )
 
-        return f"The shortest path is {path} with a total distance of {self.total_distance}."
+        return f"The shortest path is: \n{path}\n with a total distance of {self.total_distance}."
 
     def copy(self) -> Solution:
         """
@@ -112,6 +122,47 @@ class Solution(Atsp3Aco):
         for city in self.unvisited_cities:
             yield Component(self.visited_cities[-1], city)
 
+    def _is_move_valid(self, city: int, dest: int) -> bool:
+        """
+        A move is valid if the destination is not the city itself,
+        the previous city or the next city (rendundant)
+        """
+        return (
+            city != dest
+            and (city + 1) % self.problem.dimension != dest
+            and (city - 1) % self.problem.dimension != dest
+        )
+
+    def local_moves(self) -> Iterable[LocalMove]:
+        """
+        Return an iterable (generator, iterator, or iterable object)
+        over all local moves that can be applied to the solution
+        """
+        for city_id in range(self.problem.dimension):
+            for destination in range(self.problem.dimension):
+                # returns all valid local moves
+                if self._is_move_valid(city_id, destination):
+                    yield LocalMove(city_id, destination)
+
+    def random_local_move(self) -> Optional[LocalMove]:
+        """
+        Return a random local move that can be applied to the solution.
+
+        Note: repeated calls to this method may return the same
+        local move.
+        """
+        raise NotImplementedError
+
+    def random_local_moves_wor(self) -> Iterable[LocalMove]:
+        """
+        Return an iterable (generator, iterator, or iterable object)
+        over all local moves (in random order) that can be applied to
+        the solution.
+        """
+        local_moves = list(self.local_moves())
+        for i in sparse_fisher_yates_iter(len(local_moves)):
+            yield local_moves[i]
+
     def heuristic_add_move(self) -> Optional[Component]:
         """
         Return the next component to be added based on some heuristic
@@ -130,21 +181,175 @@ class Solution(Atsp3Aco):
         city_id: int = component.arc[1]
 
         self.visited_cities.append(city_id)
-
         self.unvisited_cities.remove(city_id)
 
         distance: int = self.problem.distance_matrix[component.arc[0]][city_id]
-
         self.total_distance += distance
-        self.lower_bound_value += distance
+
+        (
+            self.lower_bound_value,
+            self.current_shortest_in,
+            self.current_shortest_out,
+        ) = self._update_lower_bound(
+            component.arc,
+            self.lower_bound_value,
+            self.current_shortest_in,
+            self.current_shortest_out,
+        )
 
         if len(self.unvisited_cities) == 0:
-            self.total_distance += self.problem.distance_matrix[city_id][
-                self.visited_cities[0]
-            ]
-            self.lower_bound_value += self.problem.distance_matrix[city_id][
-                self.visited_cities[0]
-            ]
+            self.total_distance += self.problem.distance_matrix[city_id][0]
+
+    def _update_lower_bound(
+        self,
+        arc: Tuple[int, int],
+        lb: float,  # lower bound
+        csi: List[int],  # current shortest in
+        cso: List[int],  # current shortest out
+    ) -> Tuple[float, List[int], List[int]]:
+        """ "
+        Calculate lower bound after adding a component, does not change the solution,
+        only the parameters passed in.
+        """
+        # Get shortest in of the added city
+        si = self.problem.shortest_in[arc[1]][csi[arc[1]]]
+        # Get shortest out of the previously last city
+        so = self.problem.shortest_out[arc[0]][cso[arc[0]]]
+
+        # Get distance of shortest in and out of respective cities
+        sid = self.problem.distance_matrix[si][arc[1]]
+        sod = self.problem.distance_matrix[arc[0]][so]
+
+        # Remove previous idealistic values from lower bound
+        lb -= (sid + sod) / 2
+
+        # Get real distance
+        d = self.problem.distance_matrix[arc[0]][arc[1]]
+
+        # update lower bound with real distance
+        lb += d
+
+        # update shortest out for arc[1]
+        # nso = next shortest out
+        nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
+
+        # it is the last city, shortest_out being 0 is correct
+        if len(self.unvisited_cities) == 0 and nso == 0:
+            return lb, csi, cso  # TODO: check this
+
+        # shortest out for arc[1] is invalid
+        elif nso == arc[0] or nso == 0:
+            # remove invalid value from lower bound
+            lb -= self.problem.distance_matrix[arc[1]][nso] / 2
+
+            # update current shortest out
+            nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
+
+            # while the new shortest out is invalid, move to the next
+            while nso in self.visited_cities:
+                cso[arc[1]] += 1
+                nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
+
+            # add new valid value to lower bound
+            lb += self.problem.distance_matrix[arc[1]][nso] / 2
+
+        # zero shortest in
+        zsi = self.problem.shortest_in[0][csi[0]]
+
+        # it is the last city, shortest_in for 0 being arc[1] is correct
+        if len(self.unvisited_cities) == 0 and zsi == arc[1]:
+            return lb, csi, cso  # TODO: Check this
+
+        # shortest in for 0 is invalid (arc[1])
+        if self.problem.shortest_in[0][csi[0]] == arc[1]:
+            # remove invalid value from lower bound
+            lb -= self.problem.distance_matrix[zsi][0] / 2
+
+            # update current shortest in for zero
+            # nzsi = next zero shortest in
+            nzsi = self.problem.shortest_in[0][csi[0]]
+
+            # while the new shortest in is invalid, move to the next
+            while nzsi in self.visited_cities:
+                csi[0] += 1
+                nzsi = self.problem.shortest_in[0][csi[0]]
+
+            # add new valid value to lower bound
+            lb += self.problem.distance_matrix[nzsi][0] / 2
+
+        # for every city not visited yet
+        for city in self.unvisited_cities:
+            # * arc[0] was shortest in -> invalid
+
+            # if current shortest in is arc[0] it is invalid
+            if self.problem.shortest_in[city][csi[city]] == arc[0]:
+                # get shortest in (invalid)
+                # isi = invalid shortest in
+                isi = self.problem.shortest_in[city][csi[city]]
+
+                # subtract invalid shortest in from lower bound
+                lb -= self.problem.distance_matrix[isi][city] / 2
+
+                # update current shortest in
+                csi[city] += 1
+
+                # get new shortest in
+                # nsi = new shortest in
+                nsi = self.problem.shortest_in[city][csi[city]]
+
+                # while the new shortest in is invalid, move to the next
+                while nsi in self.visited_cities:
+                    csi[city] += 1
+                    nsi = self.problem.shortest_in[city][csi[city]]
+
+                # add new valid value to lower bound
+                lb += self.problem.distance_matrix[nsi][city] / 2
+
+            # * arc[1] was shortest out -> invalid
+
+            # if current shortest out is arc[1] it is invalid
+            if self.problem.shortest_out[city][cso[city]] == arc[1]:
+                # get shortest out (invalid)
+                # iso = invalid shortest out
+                iso = self.problem.shortest_out[city][cso[city]]
+
+                # subtract invalid shortest out from lower bound
+                lb -= self.problem.distance_matrix[city][iso] / 2
+
+                # update current shortest out
+                cso[city] += 1
+
+                # get new shortest out
+                # nso = new shortest out
+                nso = self.problem.shortest_out[city][cso[city]]
+
+                # while the new shortest out is invalid, move to the next
+                # 0 is always valid
+                while nso in self.visited_cities and nso != 0:
+                    cso[city] += 1
+                    nso = self.problem.shortest_out[city][cso[city]]
+
+                # add new valid value to lower bound
+                lb += self.problem.distance_matrix[city][nso] / 2
+
+        return lb, csi, cso
+
+    def step(self, lmove: LocalMove) -> None:
+        """
+        Apply a local move to the solution.
+
+        Note: this invalidates any previously generated components and
+        local moves.
+        """
+        raise NotImplementedError
+
+    def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
+        """
+        Return the objective value increment resulting from applying a
+        local move. If the objective value is not defined after
+        applying the local move return None.
+        """
+        raise NotImplementedError
 
     def objective_incr_add(self, component: Component) -> Optional[Objective]:
         """
@@ -160,7 +365,19 @@ class Solution(Atsp3Aco):
         component. If the lower bound is not defined after adding the
         component, return None.
         """
-        return self.problem.distance_matrix[component.arc[0]][component.arc[1]]
+        arc = component.arc
+        lb = self.lower_bound_value
+        csi = self.current_shortest_in
+        cso = self.current_shortest_out
+
+        result = self._update_lower_bound(
+            arc,
+            lb,
+            csi,
+            cso,
+        )
+
+        return result[0] - lb
 
     def perturb(self, ks: int) -> None:
         """
@@ -179,18 +396,17 @@ class Solution(Atsp3Aco):
 
 class Problem:
     def __init__(self, dimension: int, distance_matrix: Tuple[Tuple[int, ...], ...]):
-        self.dimension = dimension  # Number of cities
+        # Number of cities
+        self.dimension = dimension
         # Distance matrix where distance_matrix[i][j] is the distance between city i and city j
         self.distance_matrix = distance_matrix
 
-        self.lower_bound: int = self._initialize_lower_bound()
+        # list with ordered index of cities by distance
+        self.shortest_out: List[List[int]] = []
+        self.shortest_in: List[List[int]] = []
 
-    def _initialize_lower_bound(self) -> int:
-        """
-        Initialize the lower bound for the problem
-        """
-
-        return 0
+        # initial lower bound
+        self.lower_bound: float = self._initialize_lower_bound()
 
     def __str__(self):
         string = f"dimension: {self.dimension}\ndistance matrix:\n"
@@ -201,6 +417,31 @@ class Problem:
             string += "\n"
 
         return string
+
+    def _initialize_lower_bound(self) -> float:
+        """
+        Initialize the lower bound for the problem
+        """
+
+        raw_lower_bound: int = 0
+
+        for i in range(self.dimension):
+            row = list(self.distance_matrix[i])
+            sorted_row = sorted(enumerate(row), key=lambda x: x[1])
+            self.shortest_out.append([index for index, _ in sorted_row])
+
+            column = [row[i] for row in self.distance_matrix]
+            sorted_column = sorted(enumerate(column), key=lambda x: x[1])
+            self.shortest_in.append([index for index, _ in sorted_column])
+
+            raw_lower_bound += (
+                self.distance_matrix[i][self.shortest_out[i][0]]
+                + self.distance_matrix[self.shortest_in[i][0]][i]
+            )
+
+        lower_bound = raw_lower_bound / 2
+
+        return lower_bound
 
     @classmethod
     def from_textio(cls, f: TextIO) -> Problem:
