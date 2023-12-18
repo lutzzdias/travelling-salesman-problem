@@ -357,47 +357,69 @@ class Solution:
         Note: this invalidates any previously generated components and
         local moves.
         """
+        # invalidate lower bound
         self.lower_bound_value = -1
+
+        city = self.visited_cities[lmove.city_index]
         prev_city = self.visited_cities[lmove.city_index - 1]
         next_city = self.visited_cities[lmove.city_index + 1]
 
         dest = self.visited_cities[lmove.destination_index]
         prev_dest = self.visited_cities[lmove.destination_index - 1]
 
+        self._calculate_local_move_distance(
+            city, prev_city, next_city, dest, prev_dest, self.total_distance
+        )
+
+        # remove city from initial index
+        self.visited_cities.pop(lmove.city_index)
+
+        # insert city in destination index
+        self.visited_cities.insert(lmove.destination_index, city)
+
+    def _calculate_local_move_distance(
+        self,
+        city: int,
+        prev_city: int,
+        next_city: int,
+        dest: int,
+        prev_dest: int,
+        total_distance: int,
+    ) -> int:
+        """
+        Calculate the distance of a local move and update the passed in total_distance
+        """
         # get distance between city and prev
-        city_prev_dist = self.problem.distance_matrix[prev_city][lmove.city_index]
+        city_prev_dist = self.problem.distance_matrix[prev_city][city]
         # remove distance between city and prev
-        self.total_distance -= city_prev_dist
+        total_distance -= city_prev_dist
 
         # get distance between city and next
-        city_next_dist = self.problem.distance_matrix[lmove.city_index][next_city]
+        city_next_dist = self.problem.distance_matrix[city][next_city]
         # remove distance between city and next
-        self.total_distance -= city_next_dist
+        total_distance -= city_next_dist
 
         # get distance between prev and next
         post_dist = self.problem.distance_matrix[prev_city][next_city]
         # add distance between prev and next
-        self.total_distance += post_dist
+        total_distance += post_dist
 
         # get distance between city before dest and city in dest
         dest_dist = self.problem.distance_matrix[prev_dest][dest]
         # remove distance between city before dest and city in dest
-        self.total_distance -= dest_dist
+        total_distance -= dest_dist
 
         # get distance between city and dest
-        dest_city_dist = self.problem.distance_matrix[lmove.city_index][dest]
+        dest_city_dist = self.problem.distance_matrix[city][dest]
         # add distance between city and dest
-        self.total_distance += dest_city_dist
+        total_distance += dest_city_dist
 
         # get distance between prev dest and city
-        dest_prev_dist = self.problem.distance_matrix[prev_dest][lmove.city_index]
+        dest_prev_dist = self.problem.distance_matrix[prev_dest][city]
         # add distance between prev dest and city
-        self.total_distance += dest_prev_dist
+        total_distance += dest_prev_dist
 
-        # remove city from initial index
-        city = self.visited_cities.pop(lmove.city_index)
-        # insert city in destination index
-        self.visited_cities.insert(lmove.destination_index, city)
+        return total_distance
 
     def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
         """
@@ -405,7 +427,21 @@ class Solution:
         local move. If the objective value is not defined after
         applying the local move return None.
         """
-        raise NotImplementedError
+
+        city = self.visited_cities[lmove.city_index]
+        prev_city = self.visited_cities[lmove.city_index - 1]
+        next_city = self.visited_cities[lmove.city_index + 1]
+
+        dest = self.visited_cities[lmove.destination_index]
+        prev_dest = self.visited_cities[lmove.destination_index - 1]
+
+        total_distance = self.total_distance
+
+        self._calculate_local_move_distance(
+            city, prev_city, next_city, dest, prev_dest, total_distance
+        )
+
+        return total_distance - self.total_distance
 
     def objective_incr_add(self, component: Component) -> Optional[Objective]:
         """
@@ -433,7 +469,7 @@ class Solution:
             cso,
         )
 
-        return result[0] - lb
+        return result[0] - self.lower_bound_value
 
     def perturb(self, ks: int) -> None:
         """
