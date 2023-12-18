@@ -3,21 +3,19 @@ import operator
 import random
 import time
 from sys import stdin
+
 from travelling_salesman import Problem, Solution
-from local_solvers.atsp_aco import Atsp3Aco, LocalMove3Aco
 
 
 def greedy_construction(problem: Problem) -> Solution:
     solution = problem.empty_solution()
-
     components_iterator = solution.add_moves()
 
-    current_component = next(components_iterator, None)  # type: ignore
+    component = next(components_iterator, None)
 
-    while current_component is not None:
-        best_component = current_component
-
-        best_increment = solution.lower_bound_incr_add(current_component)
+    while component is not None:
+        best_component = component
+        best_increment = solution.lower_bound_incr_add(component)
 
         best_increment = best_increment if best_increment is not None else math.inf
 
@@ -28,29 +26,24 @@ def greedy_construction(problem: Problem) -> Solution:
 
             if increment < best_increment:
                 best_component = component
-
                 best_increment = increment
 
         solution.add(best_component)
-
         components_iterator = solution.add_moves()
-
-        current_component = next(components_iterator, None)  # type: ignore
+        component = next(components_iterator, None)  # type: ignore
 
     return solution
 
 
 # random greedy construction -> will pick randomly if there is a tie
-def greedy_construction_random_tie_break(problem):
+def greedy_construction_random_tie_break(problem) -> Solution:
     solution = problem.empty_solution()
-
     components_iterator = solution.add_moves()
 
     component = next(components_iterator, None)  # None if empty
 
     while component is not None:
         best_component = [component]
-
         best_increment = solution.lower_bound_incr_add(component)
 
         for component in components_iterator:
@@ -58,30 +51,27 @@ def greedy_construction_random_tie_break(problem):
 
             if increment < best_increment:
                 best_component = [component]
-
                 best_increment = increment
+
             # tie
-            elif incr == best_incr:
+            elif increment == best_increment:
                 best_component.append(component)
 
         solution.add(random.choice(best_component))
-
         components_iterator = solution.add_moves()
-
         component = next(components_iterator, None)
 
     return solution
 
 
 # random adaptive greedy construction -> will pick randomly among the components that are within a certain threshold
-def greedy_randomized_adaptive_construction(problem, alpha=0):
+def greedy_randomized_adaptive_construction(problem, alpha=0) -> Solution:
     solution: Solution = problem.empty_solution()
 
     get_components = lambda: [
         (solution.lower_bound_incr_add(component), component)
         for component in solution.add_moves()
     ]
-
     components = get_components()
 
     while components:
@@ -94,7 +84,7 @@ def greedy_randomized_adaptive_construction(problem, alpha=0):
         # calculate threshold
         threshold = min_component + alpha * (max_component - min_component)
 
-        # components lower then the threshold
+        # components lower than the threshold
         restricted_components = [
             component for increment, component in components if increment <= threshold
         ]
@@ -108,17 +98,15 @@ def greedy_randomized_adaptive_construction(problem, alpha=0):
 
 
 # grasp -> will run the greedy_randomized_adaptive_construction for a certain amount of time and return the best solution
-def grasp(problem, budget, alpha=0):
+def grasp(problem, budget, alpha=0) -> Solution:
     # budget is the amount of time it will be allowed to run
     start = time.perf_counter()
 
     best_solution = greedy_randomized_adaptive_construction(problem, alpha)
-
     best_objective = best_solution.objective()
 
     while time.perf_counter() - start < budget:  # while there is time left
         solution = greedy_randomized_adaptive_construction(problem, alpha)
-
         objective = solution.objective()
 
         if objective < best_objective:  # curr solution is better than best solution
@@ -128,6 +116,7 @@ def grasp(problem, budget, alpha=0):
     return best_solution
 
 
+# TODO: Check this
 def beam_search(problem, beam_width=10):
     solution = problem.empty_solution()
 
@@ -175,84 +164,84 @@ def beam_search(problem, beam_width=10):
     return best_solution
 
 
-def local_search_first(solution: Solution):
+def local_search_first(solution: Solution) -> Solution:
     available_local_moves = solution.random_local_moves_wor()
+    move = next(available_local_moves, None)
 
-    next_move: LocalMove = next(available_local_moves, None)
+    while move is not None:
+        increment = solution.objective_incr_local(move)
 
-    while next_move is not None:
-        if solution.objective_incr_local(next_move) > 0:
-            solution.step(next_move)
-
+        if increment < 0:
+            solution.step(move)
             available_local_moves = solution.random_local_moves_wor()
 
-        next_move: LocalMove = next(available_local_moves, None)
+        move = next(available_local_moves, None)
+
+    return solution
 
 
-def local_search_best(solution: Solution):
+def local_search_best(solution: Solution) -> Solution:
     available_local_moves = solution.random_local_moves_wor()
+    move = next(available_local_moves, None)
 
-    next_move: LocalMove = next(available_local_moves, None)
-
-    while next_move is not None:
-        best_move = next_move
+    while move is not None:
+        best_move = move
         best_increment = solution.objective_incr_local(best_move)
 
         for move in available_local_moves:
             increment = solution.objective_incr_local(move)
 
-            if increment > best_increment:
+            if increment < best_increment:
                 best_move = move
-                best_increment = solution.objective_incr_local(best_move)
+                best_increment = increment
 
-        if best_increment <= 0:
-            break
+        if best_increment < 0:
+            solution.step(best_move)
+            available_local_moves = solution.random_local_moves_wor()
 
-        solution.step(best_move)
+        move = next(available_local_moves, None)
 
-        available_local_moves = solution.random_local_moves_wor()
-
-        next_move: LocalMove = next(available_local_moves, None)
+    return solution
 
 
-def ACO(solution: Solution) -> Solution:
-    best_solution = solution.copy()
-
-    ITERATIONS: int = 50
-
-    for iteration in range(ITERATIONS):
-        cycles = list(solution.local_moves())
-
-        # elitism
-        cycles.append(LocalMove3Aco(solution.visited_cities, solution.objective()))
-
-        cycles.sort(key=lambda x: x.distance)
-
-        # select cycles for the step
-        cycles = cycles[: solution.ants_per_iteration // 2]
-
-        solution.step(cycles)
-
-        if solution.objective() < best_solution.objective():
-            best_solution = solution.copy()
-
-    return best_solution
+# def ACO(solution: Solution) -> Solution:
+#     best_solution = solution.copy()
+#
+#     ITERATIONS: int = 50
+#
+#     for iteration in range(ITERATIONS):
+#         cycles = list(solution.local_moves())
+#
+#         # elitism
+#         cycles.append(LocalMove3Aco(solution.visited_cities, solution.objective()))
+#
+#         cycles.sort(key=lambda x: x.distance)
+#
+#         # select cycles for the step
+#         cycles = cycles[: solution.ants_per_iteration // 2]
+#
+#         solution.step(cycles)
+#
+#         if solution.objective() < best_solution.objective():
+#             best_solution = solution.copy()
+#
+#     return best_solution
 
 
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
-    # solution1 = greedy_construction(problem)
+    solution1 = greedy_construction(problem)
 
     # solution2 = greedy_randomized_adaptive_construction(problem, alpha=0.1)
 
-    solution3 = grasp(problem, 10, alpha=0.1)
+    # solution3 = grasp(problem, 10, alpha=0.1)
 
     # solution4 = beam_search(problem, beam_width=100)
 
-    # print(solution1.output())
+    print(solution1.output())
     # print(solution2.lower_bound_value)
-    print(solution3.output())
+    # print(solution3.output())
     # print(solution4.lower_bound_value)
 
     # solution1_copy = solution1.copy()
@@ -265,9 +254,9 @@ if __name__ == "__main__":
     # print(solution1.output())
     # print(solution1_copy.output())
 
-    solution3 = ACO(solution3)
+    # solution3 = ACO(solution3)
 
-    print(solution3.output())
+    # print(solution3.output())
 
     # local_search_first(solution2)
     # print(solution2.lower_bound_value)
