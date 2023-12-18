@@ -7,6 +7,17 @@ from sys import stdin
 from travelling_salesman import Problem, Solution
 
 
+def random_construction(problem: Problem) -> Solution:
+    solution = problem.empty_solution()
+    components = list(solution.add_moves())
+
+    while len(components) > 0:
+        solution.add(random.choice(components))
+        components = list(solution.add_moves())
+
+    return solution
+
+
 def greedy_construction(problem: Problem) -> Solution:
     solution = problem.empty_solution()
     components_iterator = solution.add_moves()
@@ -231,35 +242,5 @@ def local_search_best(solution: Solution) -> Solution:
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
-    solution1 = greedy_construction(problem)
-
-    # solution2 = greedy_randomized_adaptive_construction(problem, alpha=0.1)
-
-    # solution3 = grasp(problem, 10, alpha=0.1)
-
-    # solution4 = beam_search(problem, beam_width=100)
-
-    print(solution1.output())
-    # print(solution2.lower_bound_value)
-    # print(solution3.output())
-    # print(solution4.lower_bound_value)
-
-    # solution1_copy = solution1.copy()
-
-    # print(solution1_copy)
-
-    # local_search_first(solution1)
-    # local_search_best(solution1_copy)
-
-    # print(solution1.output())
-    # print(solution1_copy.output())
-
-    # solution3 = ACO(solution3)
-
-    # print(solution3.output())
-
-    # local_search_first(solution2)
-    # print(solution2.lower_bound_value)
-
-    # local_search_first(solution3)
-    # print(solution3.lower_bound_value)
+    solution = random_construction(problem)
+    print(solution.output())
