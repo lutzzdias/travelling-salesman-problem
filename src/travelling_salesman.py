@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import random
 from collections.abc import Iterable
 from typing import Any, List, Optional, Set, TextIO, Tuple
 
@@ -34,12 +35,15 @@ class Component:
 
 
 class LocalMove:
-    def __init__(self, city_id: int, destination_index: int):
-        self.city_id: int = city_id
+    def __init__(self, city_index: int, destination_index: int):
+        self.city_index: int = city_index
         self.destination_index: int = destination_index
 
     def __str__(self):
-        return f"city_id: {self.city_id}" f"destination_index: {self.destination_index}"
+        return (
+            f"city_index: {self.city_index}"
+            f"destination_index: {self.destination_index}"
+        )
 
 
 class Solution:
@@ -152,11 +156,20 @@ class Solution:
         Note: repeated calls to this method may return the same
         local move.
         """
-        # TODO
-        # Get random value (0 - n-1) - city_index
-        # Get random value (1 - n-3) - dest
-        # dest = (city_index + dest) % n
-        raise NotImplementedError
+        city_index = random.randint(0, self.problem.dimension - 1)
+
+        dest = random.randint(1, self.problem.dimension - 3)
+        final_dest = (city_index + dest) % self.problem.dimension
+
+        local_move = LocalMove(city_index, final_dest)
+
+        while not self._is_move_valid(city_index, final_dest):
+            dest = random.randint(1, self.problem.dimension - 3)
+            final_dest = (city_index + dest) % self.problem.dimension
+
+            local_move = LocalMove(city_index, final_dest)
+
+        return local_move
 
     def random_local_moves_wor(self) -> Iterable[LocalMove]:
         """
@@ -344,50 +357,47 @@ class Solution:
         Note: this invalidates any previously generated components and
         local moves.
         """
-        # TODO
-        # invalidate bound (NONE)
-        # update total distance instead
-        city_index = self.visited_cities.index(lmove.city_id)
-        prev_city = self.visited_cities[city_index - 1]
-        next_city = self.visited_cities[city_index + 1]
+        self.lower_bound_value = -1
+        prev_city = self.visited_cities[lmove.city_index - 1]
+        next_city = self.visited_cities[lmove.city_index + 1]
 
-        dest_city = self.visited_cities[lmove.destination_index]
+        dest = self.visited_cities[lmove.destination_index]
         prev_dest = self.visited_cities[lmove.destination_index - 1]
 
         # get distance between city and prev
-        city_prev_dist = self.problem.distance_matrix[prev_city][city_index]
+        city_prev_dist = self.problem.distance_matrix[prev_city][lmove.city_index]
         # remove distance between city and prev
-        self.lower_bound_value -= city_prev_dist / 2
+        self.total_distance -= city_prev_dist
 
         # get distance between city and next
-        city_next_dist = self.problem.distance_matrix[city_index][next_city]
+        city_next_dist = self.problem.distance_matrix[lmove.city_index][next_city]
         # remove distance between city and next
-        self.lower_bound_value -= city_next_dist / 2
+        self.total_distance -= city_next_dist
 
         # get distance between prev and next
         post_dist = self.problem.distance_matrix[prev_city][next_city]
         # add distance between prev and next
-        self.lower_bound_value += post_dist / 2
+        self.total_distance += post_dist
 
         # get distance between city before dest and city in dest
-        dest_dist = self.problem.distance_matrix[prev_dest][dest_city]
+        dest_dist = self.problem.distance_matrix[prev_dest][dest]
         # remove distance between city before dest and city in dest
-        self.lower_bound_value -= dest_dist / 2
+        self.total_distance -= dest_dist
 
         # get distance between city and dest
-        dest_city_dist = self.problem.distance_matrix[city_index][dest_city]
+        dest_city_dist = self.problem.distance_matrix[lmove.city_index][dest]
         # add distance between city and dest
-        self.lower_bound_value += dest_city_dist / 2
+        self.total_distance += dest_city_dist
 
         # get distance between prev dest and city
-        dest_prev_dist = self.problem.distance_matrix[prev_dest][city_index]
+        dest_prev_dist = self.problem.distance_matrix[prev_dest][lmove.city_index]
         # add distance between prev dest and city
-        self.lower_bound_value += dest_prev_dist / 2
+        self.total_distance += dest_prev_dist
 
         # remove city from initial index
-        removed_city = self.visited_cities.pop(city_index)
+        city = self.visited_cities.pop(lmove.city_index)
         # insert city in destination index
-        self.visited_cities.insert(lmove.destination_index, removed_city)
+        self.visited_cities.insert(lmove.destination_index, city)
 
     def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
         """
