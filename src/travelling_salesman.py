@@ -17,8 +17,9 @@
 
 from __future__ import annotations
 
-from typing import TextIO, Optional, Any, Set, List, Tuple
-from collections.abc import Iterable, Hashable
+from collections.abc import Iterable
+from typing import Any, List, Optional, Set, TextIO, Tuple
+
 from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
 
 Objective = Any
@@ -30,10 +31,6 @@ class Component:
 
     def __str__(self):
         return f"source: {self.arc[0]}" f"dest: {self.arc[1]}"
-
-    @property
-    def cid(self) -> Hashable:
-        raise NotImplementedError
 
 
 class LocalMove:
@@ -235,7 +232,7 @@ class Solution:
 
         # it is the last city, shortest_out being 0 is correct
         if len(self.unvisited_cities) == 0 and nso == 0:
-            return lb, csi, cso  # TODO: check this
+            pass
 
         # shortest out for arc[1] is invalid
         elif nso == arc[0] or nso == 0:
@@ -258,7 +255,7 @@ class Solution:
 
         # it is the last city, shortest_in for 0 being arc[1] is correct
         if len(self.unvisited_cities) == 0 and zsi == arc[1]:
-            return lb, csi, cso  # TODO: Check this
+            pass
 
         # shortest in for 0 is invalid (arc[1])
         if self.problem.shortest_in[0][csi[0]] == arc[1]:
@@ -341,7 +338,47 @@ class Solution:
         Note: this invalidates any previously generated components and
         local moves.
         """
-        raise NotImplementedError
+        city_index = self.visited_cities.index(lmove.city_id)
+        prev_city = self.visited_cities[city_index - 1]
+        next_city = self.visited_cities[city_index + 1]
+
+        dest_city = self.visited_cities[lmove.destination_index]
+        prev_dest = self.visited_cities[lmove.destination_index - 1]
+
+        # get distance between city and prev
+        city_prev_dist = self.problem.distance_matrix[prev_city][city_index]
+        # remove distance between city and prev
+        self.lower_bound_value -= city_prev_dist / 2
+
+        # get distance between city and next
+        city_next_dist = self.problem.distance_matrix[city_index][next_city]
+        # remove distance between city and next
+        self.lower_bound_value -= city_next_dist / 2
+
+        # get distance between prev and next
+        post_dist = self.problem.distance_matrix[prev_city][next_city]
+        # add distance between prev and next
+        self.lower_bound_value += post_dist / 2
+
+        # get distance between city before dest and city in dest
+        dest_dist = self.problem.distance_matrix[prev_dest][dest_city]
+        # remove distance between city before dest and city in dest
+        self.lower_bound_value -= dest_dist / 2
+
+        # get distance between city and dest
+        dest_city_dist = self.problem.distance_matrix[city_index][dest_city]
+        # add distance between city and dest
+        self.lower_bound_value += dest_city_dist / 2
+
+        # get distance between prev dest and city
+        dest_prev_dist = self.problem.distance_matrix[prev_dest][city_index]
+        # add distance between prev dest and city
+        self.lower_bound_value += dest_prev_dist / 2
+
+        # remove city from initial index
+        removed_city = self.visited_cities.pop(city_index)
+        # insert city in destination index
+        self.visited_cities.insert(lmove.destination_index, removed_city)
 
     def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
         """
