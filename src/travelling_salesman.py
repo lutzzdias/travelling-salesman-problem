@@ -122,18 +122,16 @@ class Solution:
         for city in self.unvisited_cities:
             yield Component(self.visited_cities[-1], city)
 
-    def _is_move_valid(self, city: int, dest: int) -> bool:
+    def _is_move_valid(self, city_index: int, dest: int) -> bool:
         """
         A move is valid if the destination is not the city itself,
         the previous city or the next city (redundant)
         """
-        # TODO
-        #
 
         return (
-            city != dest
-            and (city + 1) % self.problem.dimension != dest
-            and (city - 1) % self.problem.dimension != dest
+            city_index != dest
+            and (city_index - 1) % self.problem.dimension != dest
+            and (city_index - 2) % self.problem.dimension != dest
         )
 
     def local_moves(self) -> Iterable[LocalMove]:
