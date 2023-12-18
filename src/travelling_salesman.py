@@ -231,8 +231,8 @@ class Solution:
         nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
 
         # it is the last city, shortest_out being 0 is correct
-        if len(self.unvisited_cities) == 0 and nso == 0:
-            pass
+        if len(self.unvisited_cities) <= 1 and nso == 0:
+            return lb, csi, cso
 
         # shortest out for arc[1] is invalid
         elif nso == arc[0] or nso == 0:
@@ -255,7 +255,7 @@ class Solution:
 
         # it is the last city, shortest_in for 0 being arc[1] is correct
         if len(self.unvisited_cities) == 0 and zsi == arc[1]:
-            pass
+            return lb, csi, cso
 
         # shortest in for 0 is invalid (arc[1])
         if self.problem.shortest_in[0][csi[0]] == arc[1]:
