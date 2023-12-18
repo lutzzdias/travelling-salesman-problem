@@ -101,7 +101,10 @@ class Solution:
         Return the objective value for this solution if defined, otherwise
         should return None
         """
-        return self.total_distance
+        if self.is_feasible():
+            return self.total_distance
+        else:
+            return None
 
     def lower_bound(self) -> Optional[Objective]:
         """
@@ -122,8 +125,11 @@ class Solution:
     def _is_move_valid(self, city: int, dest: int) -> bool:
         """
         A move is valid if the destination is not the city itself,
-        the previous city or the next city (rendundant)
+        the previous city or the next city (redundant)
         """
+        # TODO
+        #
+
         return (
             city != dest
             and (city + 1) % self.problem.dimension != dest
@@ -148,6 +154,10 @@ class Solution:
         Note: repeated calls to this method may return the same
         local move.
         """
+        # TODO
+        # Get random value (0 - n-1) - city_index
+        # Get random value (1 - n-3) - dest
+        # dest = (city_index + dest) % n
         raise NotImplementedError
 
     def random_local_moves_wor(self) -> Iterable[LocalMove]:
@@ -336,6 +346,9 @@ class Solution:
         Note: this invalidates any previously generated components and
         local moves.
         """
+        # TODO
+        # invalidate bound (NONE)
+        # update total distance instead
         city_index = self.visited_cities.index(lmove.city_id)
         prev_city = self.visited_cities[city_index - 1]
         next_city = self.visited_cities[city_index + 1]
@@ -419,6 +432,8 @@ class Solution:
         Perturb the solution in place. The amount of perturbation is
         controlled by the parameter ks (kick strength)
         """
+        # TODO
+        # Generate random aleatory moves (for ILS)
         raise NotImplementedError
 
     def components(self) -> Iterable[Component]:
