@@ -277,7 +277,6 @@ class Solution:
         # for every city not visited yet
         for city in self.unvisited_cities:
             # * arc[0] was shortest in -> invalid
-
             # if current shortest in is arc[0] it is invalid
             if self.problem.shortest_in[city][csi[city]] == arc[0]:
                 # get shortest in (invalid)
@@ -303,7 +302,6 @@ class Solution:
                 lb += self.problem.distance_matrix[nsi][city] / 2
 
             # * arc[1] was shortest out -> invalid
-
             # if current shortest out is arc[1] it is invalid
             if self.problem.shortest_out[city][cso[city]] == arc[1]:
                 # get shortest out (invalid)
@@ -404,8 +402,8 @@ class Solution:
         """
         arc = component.arc
         lb = self.lower_bound_value
-        csi = self.current_shortest_in
-        cso = self.current_shortest_out
+        csi = self.current_shortest_in.copy()
+        cso = self.current_shortest_out.copy()
 
         result = self._update_lower_bound(
             arc,
