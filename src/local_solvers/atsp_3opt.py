@@ -124,7 +124,7 @@ class Atsp3Opt(LocalOptimization):
         self.visited_cities = updated_visited_cities
 
         self.total_distance -= distance_difference
-        self.lower_bound_value -= distance_difference
+        self.lower_bound_value = -1
 
     def objective_incr_local(self, lmove: LocalMove3Opt) -> Optional[Objective]:
         """
