@@ -86,6 +86,7 @@ class Solution:
         Note: changes to the copy must not affect the original
         solution. However, this does not need to be a deepcopy.
         """
+
         return Solution(
             self.problem,
             self.visited_cities.copy(),
@@ -247,16 +248,19 @@ class Solution:
         # update lower bound with real distance
         lb += d
 
-        # update shortest out for arc[1]
+        # * update shortest out for arc[1]
         # nso = next shortest out
         nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
 
         # it is the last city, shortest_out being 0 is correct
-        if len(self.unvisited_cities) <= 1 and nso == 0:
+        if len(self.unvisited_cities) == 1:
+            lb -= self.problem.distance_matrix[arc[1]][nso] / 2
+            lb += self.problem.distance_matrix[arc[1]][self.visited_cities[0]] / 2
             return lb, csi, cso
-
+        elif len(self.unvisited_cities) == 0:
+            return lb, csi, cso
         # shortest out for arc[1] is invalid
-        elif nso == arc[0] or nso == 0:
+        elif nso == arc[0] or nso == self.visited_cities[0]:
             # remove invalid value from lower bound
             lb -= self.problem.distance_matrix[arc[1]][nso] / 2
 
@@ -272,20 +276,20 @@ class Solution:
             lb += self.problem.distance_matrix[arc[1]][nso] / 2
 
         # zero shortest in
-        zsi = self.problem.shortest_in[0][csi[0]]
+        zsi = self.problem.shortest_in[self.visited_cities[0]][csi[0]]
 
         # it is the last city, shortest_in for 0 being arc[1] is correct
         if len(self.unvisited_cities) == 0 and zsi == arc[1]:
             return lb, csi, cso
 
         # shortest in for 0 is invalid (arc[1])
-        if self.problem.shortest_in[0][csi[0]] == arc[1]:
+        if zsi == arc[1]:
             # remove invalid value from lower bound
-            lb -= self.problem.distance_matrix[zsi][0] / 2
+            lb -= self.problem.distance_matrix[zsi][self.visited_cities[0]] / 2
 
             # update current shortest in for zero
             # nzsi = next zero shortest in
-            nzsi = self.problem.shortest_in[0][csi[0]]
+            nzsi = self.problem.shortest_in[self.visited_cities[0]][csi[0]]
 
             # while the new shortest in is invalid, move to the next
             while nzsi in self.visited_cities:
@@ -293,12 +297,11 @@ class Solution:
                 nzsi = self.problem.shortest_in[0][csi[0]]
 
             # add new valid value to lower bound
-            lb += self.problem.distance_matrix[nzsi][0] / 2
+            lb += self.problem.distance_matrix[nzsi][self.visited_cities[0]] / 2
 
         # for every city not visited yet
         for city in self.unvisited_cities:
             # * arc[0] was shortest in -> invalid
-            # if current shortest in is arc[0] it is invalid
             if self.problem.shortest_in[city][csi[city]] == arc[0]:
                 # get shortest in (invalid)
                 # isi = invalid shortest in
@@ -323,7 +326,6 @@ class Solution:
                 lb += self.problem.distance_matrix[nsi][city] / 2
 
             # * arc[1] was shortest out -> invalid
-            # if current shortest out is arc[1] it is invalid
             if self.problem.shortest_out[city][cso[city]] == arc[1]:
                 # get shortest out (invalid)
                 # iso = invalid shortest out

@@ -243,4 +243,5 @@ if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
     solution = random_construction(problem)
-    print(solution.output())
+    print(f"lb:  {solution.lower_bound()}")
+    print(f"td:  {solution.objective()}")
