@@ -1,13 +1,13 @@
 from collections.abc import Iterable
-from typing import Any, List, Optional, Set, TextIO, Tuple
-
-from interfaces.construction import Construction
+from typing import List, Optional, Tuple
 from interfaces.component import Component
 
-Objective = int
+from interfaces.construction import Construction
+
+Objective = int | float
 
 
-class NewLbComponent:
+class NewLbComponent(Component):
     def __init__(self, source: int, dest: int):
         self.arc = (source, dest)
 
@@ -16,7 +16,7 @@ class NewLbComponent:
 
 
 class NewLbConstructor(Construction):
-    def components(self) -> Iterable[NewLbComponent]:
+    def components(self) -> Iterable[Component]:
         """
         Returns an iterable to the components of a solution
         """
@@ -46,7 +46,7 @@ class NewLbConstructor(Construction):
         """
         raise NotImplementedError
 
-    def add(self, component: NewLbComponent) -> None:
+    def add(self, component: Component) -> None:
         """
         Add a component to the solution.
 
@@ -110,7 +110,7 @@ class NewLbConstructor(Construction):
         nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
 
         # it is the last city, shortest_out being 0 is correct
-        if len(self.unvisited_cities) <= 1 and nso == 0:
+        if len(self.unvisited_cities) < 1:
             return lb, csi, cso
 
         # shortest out for arc[1] is invalid
