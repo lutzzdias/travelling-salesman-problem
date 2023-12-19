@@ -1,4 +1,12 @@
-class LocalMoveTradeCities(LocalMove):
+import random
+from typing import Iterable, Optional
+from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
+from interfaces.local_move import LocalMove
+from interfaces.local_optimization import LocalOptimization
+from travelling_salesman import Objective
+
+
+class LocalMoveShiftInsert(LocalMove):
     def __init__(self, city_index: int, destination_index: int):
         self.city_index: int = city_index
         self.destination_index: int = destination_index
@@ -10,7 +18,7 @@ class LocalMoveTradeCities(LocalMove):
         )
 
 
-class AtspTradeCities(LocalOptimization):
+class AtspShiftInsert(LocalOptimization):
     def _is_move_valid(self, city_index: int, dest: int) -> bool:
         """
         A move is valid if the destination is not the city itself,
