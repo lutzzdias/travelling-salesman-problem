@@ -1,23 +1,33 @@
-import math
-import operator
-import random
-import time
+import math, operator, random, time
 from sys import stdin
-from travelling_salesman import Problem, Solution
-from local_solvers.atsp_aco import Atsp3Aco, LocalMove3Aco
 
 
-def greedy_construction(problem: Problem) -> Solution:
-    solution = problem.empty_solution()
+from travelling_salesman import Implementation, Problem, BaseSolution, SolutionNewLb3Opt
+from local_solvers.atsp_aco import LocalMoveAco
 
+
+# Completely random construction
+def random_construction(problem: Problem, imp: int) -> BaseSolution:
+    solution = problem.empty_solution(imp)
+    components = list(solution.add_moves())
+
+    while len(components) > 0:
+        solution.add(random.choice(components))
+        components = list(solution.add_moves())
+
+    return solution
+
+
+# if there is a tie, the first element is always picked
+def greedy_construction(problem: Problem, imp: int) -> BaseSolution:
+    solution = problem.empty_solution(imp)
     components_iterator = solution.add_moves()
 
-    current_component = next(components_iterator, None)  # type: ignore
+    component = next(components_iterator, None)
 
-    while current_component is not None:
-        best_component = current_component
-
-        best_increment = solution.lower_bound_incr_add(current_component)
+    while component is not None:
+        best_component = component
+        best_increment = solution.lower_bound_incr_add(component)
 
         best_increment = best_increment if best_increment is not None else math.inf
 
@@ -28,29 +38,23 @@ def greedy_construction(problem: Problem) -> Solution:
 
             if increment < best_increment:
                 best_component = component
-
                 best_increment = increment
-
         solution.add(best_component)
-
         components_iterator = solution.add_moves()
-
-        current_component = next(components_iterator, None)  # type: ignore
+        component = next(components_iterator, None)
 
     return solution
 
 
-# random greedy construction -> will pick randomly if there is a tie
-def greedy_construction_random_tie_break(problem):
-    solution = problem.empty_solution()
-
+# will pick randomly if there is a tie
+def greedy_construction_random_tie_break(problem, imp: int) -> BaseSolution:
+    solution = problem.empty_solution(imp)
     components_iterator = solution.add_moves()
 
     component = next(components_iterator, None)  # None if empty
 
     while component is not None:
         best_component = [component]
-
         best_increment = solution.lower_bound_incr_add(component)
 
         for component in components_iterator:
@@ -58,30 +62,31 @@ def greedy_construction_random_tie_break(problem):
 
             if increment < best_increment:
                 best_component = [component]
-
                 best_increment = increment
+
             # tie
-            elif incr == best_incr:
+            elif increment == best_increment:
                 best_component.append(component)
 
         solution.add(random.choice(best_component))
-
         components_iterator = solution.add_moves()
-
         component = next(components_iterator, None)
 
     return solution
 
 
-# random adaptive greedy construction -> will pick randomly among the components that are within a certain threshold
-def greedy_randomized_adaptive_construction(problem, alpha=0):
-    solution: Solution = problem.empty_solution()
+# will pick randomly among the components that are within a certain threshold
+def greedy_randomized_adaptive_construction(
+    problem,
+    imp: int,
+    alpha=0,
+) -> BaseSolution:
+    solution: BaseSolution = problem.empty_solution(imp)
 
     get_components = lambda: [
         (solution.lower_bound_incr_add(component), component)
         for component in solution.add_moves()
     ]
-
     components = get_components()
 
     while components:
@@ -94,7 +99,7 @@ def greedy_randomized_adaptive_construction(problem, alpha=0):
         # calculate threshold
         threshold = min_component + alpha * (max_component - min_component)
 
-        # components lower then the threshold
+        # components lower than the threshold
         restricted_components = [
             component for increment, component in components if increment <= threshold
         ]
@@ -107,18 +112,16 @@ def greedy_randomized_adaptive_construction(problem, alpha=0):
     return solution
 
 
-# grasp -> will run the greedy_randomized_adaptive_construction for a certain amount of time and return the best solution
-def grasp(problem, budget, alpha=0):
+# runs the greedy_randomized_adaptive_construction for a certain amount of time and returns the best solution
+def grasp(problem, budget, imp: int, alpha=0) -> BaseSolution:
     # budget is the amount of time it will be allowed to run
     start = time.perf_counter()
 
-    best_solution = greedy_randomized_adaptive_construction(problem, alpha)
-
+    best_solution = greedy_randomized_adaptive_construction(problem, imp, alpha)
     best_objective = best_solution.objective()
 
     while time.perf_counter() - start < budget:  # while there is time left
-        solution = greedy_randomized_adaptive_construction(problem, alpha)
-
+        solution = greedy_randomized_adaptive_construction(problem, imp, alpha)
         objective = solution.objective()
 
         if objective < best_objective:  # curr solution is better than best solution
@@ -128,8 +131,9 @@ def grasp(problem, budget, alpha=0):
     return best_solution
 
 
-def beam_search(problem, beam_width=10):
-    solution = problem.empty_solution()
+# starts with wide search and then narrows down
+def beam_search(problem, imp: int, beam_width=10):
+    solution = problem.empty_solution(imp)
 
     best_solution, best_objective = (
         (solution, solution.objective()) if solution.is_feasible() else (None, None)
@@ -172,13 +176,12 @@ def beam_search(problem, beam_width=10):
 
             current.append((lower_bound, solution))
 
-    return best_solution
 
-
-def local_search_first(solution: Solution):
+# tries local moves and picks the first one that improves the objective
+def first_improvement(solution: BaseSolution):
     available_local_moves = solution.random_local_moves_wor()
 
-    next_move: LocalMove = next(available_local_moves, None)
+    next_move = next(available_local_moves, None)
 
     while next_move is not None:
         if solution.objective_incr_local(next_move) > 0:
@@ -186,13 +189,16 @@ def local_search_first(solution: Solution):
 
             available_local_moves = solution.random_local_moves_wor()
 
-        next_move: LocalMove = next(available_local_moves, None)
+        next_move = next(available_local_moves, None)
+
+    return solution
 
 
-def local_search_best(solution: Solution):
+# tries all local moves and picks the best improvement of them
+def best_improvement(solution: BaseSolution):
     available_local_moves = solution.random_local_moves_wor()
 
-    next_move: LocalMove = next(available_local_moves, None)
+    next_move = next(available_local_moves, None)
 
     while next_move is not None:
         best_move = next_move
@@ -212,19 +218,22 @@ def local_search_best(solution: Solution):
 
         available_local_moves = solution.random_local_moves_wor()
 
-        next_move: LocalMove = next(available_local_moves, None)
+        next_move = next(available_local_moves, None)
+
+    return solution
 
 
-def ACO(solution: Solution) -> Solution:
+# tries to find best local move with backwards memory (ants)
+def ACO(solution: BaseSolution) -> BaseSolution:
     best_solution = solution.copy()
 
     ITERATIONS: int = 50
 
-    for iteration in range(ITERATIONS):
+    for _ in range(ITERATIONS):
         cycles = list(solution.local_moves())
 
         # elitism
-        cycles.append(LocalMove3Aco(solution.visited_cities, solution.objective()))
+        cycles.append(LocalMoveAco(solution.visited_cities, solution.objective()))
 
         cycles.sort(key=lambda x: x.distance)
 
@@ -242,35 +251,6 @@ def ACO(solution: Solution) -> Solution:
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
-    # solution1 = greedy_construction(problem)
-
-    # solution2 = greedy_randomized_adaptive_construction(problem, alpha=0.1)
-
-    solution3 = grasp(problem, 10, alpha=0.1)
-
-    # solution4 = beam_search(problem, beam_width=100)
-
-    # print(solution1.output())
-    # print(solution2.lower_bound_value)
-    print(solution3.output())
-    # print(solution4.lower_bound_value)
-
-    # solution1_copy = solution1.copy()
-
-    # print(solution1_copy)
-
-    # local_search_first(solution1)
-    # local_search_best(solution1_copy)
-
-    # print(solution1.output())
-    # print(solution1_copy.output())
-
-    solution3 = ACO(solution3)
-
-    print(solution3.output())
-
-    # local_search_first(solution2)
-    # print(solution2.lower_bound_value)
-
-    # local_search_first(solution3)
-    # print(solution3.lower_bound_value)
+    solution = greedy_construction(problem, Implementation.NEW_LB_SHIFT_INSERT)
+    print(f"lb:  {solution.lower_bound()}")
+    print(f"td:  {solution.objective()}")

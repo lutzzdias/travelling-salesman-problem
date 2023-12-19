@@ -1,5 +1,5 @@
-from collections.abc import Iterable, Hashable
-from typing import TextIO, Optional, Any, Set, List, Tuple
+from collections.abc import Iterable
+from typing import Optional, Any, List
 import random
 import multiprocessing
 
@@ -10,7 +10,7 @@ from interfaces.local_optimization import LocalOptimization
 Objective = Any
 
 
-class LocalMove3Aco(LocalMove):
+class LocalMoveAco(LocalMove):
     def __init__(self, path: List[int], distance: int):
         self.path: List[int] = path
         self.distance: int = distance
@@ -19,17 +19,17 @@ class LocalMove3Aco(LocalMove):
         return f"distance: {self.distance}\npath: {self.path}\n"
 
 
-class Atsp3Aco(LocalOptimization):
-    def __init__(self, ants_per_iteration=200, degradation_factor=0.9):
+class AtspAco(LocalOptimization):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.pheromones: List[List[float]] = [
             [0.0] * self.problem.dimension
         ] * self.problem.dimension
-        self.ants_per_iteration: int = ants_per_iteration
-        self.degradation_factor = degradation_factor
+        self.ants_per_iteration: int = 200
+        self.degradation_factor = 0.9
 
     def _local_move(self, _):
-        ALPHA: int = 0.9
-        BETA: int = 1.5
+        ALPHA: float = 0.9
+        BETA: float = 1.5
 
         dimension: int = self.problem.dimension
 
@@ -77,9 +77,9 @@ class Atsp3Aco(LocalOptimization):
 
         total_length += self.problem.distance_matrix[current][cycle[0]]
 
-        return LocalMove3Aco(cycle, total_length)
+        return LocalMoveAco(cycle, total_length)
 
-    def local_moves(self) -> Iterable[LocalMove3Aco]:
+    def local_moves(self) -> Iterable[LocalMoveAco]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves that can be applied to the solution
@@ -88,7 +88,7 @@ class Atsp3Aco(LocalOptimization):
         with multiprocessing.Pool() as pool:
             return list(pool.map(self._local_move, range(self.ants_per_iteration)))
 
-    def step(self, lmoves: List[LocalMove3Aco]) -> None:
+    def step(self, lmoves: List[LocalMoveAco]) -> None:
         """
         Apply a local move to the solution.
 
@@ -121,7 +121,7 @@ class Atsp3Aco(LocalOptimization):
                 for i in range(dimension)
             ]
 
-    def objective_incr_local(self, lmove: LocalMove3Aco) -> Optional[Objective]:
+    def objective_incr_local(self, lmove: LocalMoveAco) -> Optional[Objective]:
         """
         Return the objective value increment resulting from applying a
         local move. If the objective value is not defined after

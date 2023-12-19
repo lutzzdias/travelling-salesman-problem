@@ -1,6 +1,6 @@
-from collections.abc import Iterable, Hashable
-from typing import TextIO, Optional, Any, Set, List, Tuple
-import random
+from collections.abc import Iterable
+from typing import Optional, Any, Tuple
+import random, time
 
 from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
 from interfaces.local_move import LocalMove
@@ -19,7 +19,7 @@ class LocalMove3Opt(LocalMove):
         self.Z2: int = Z2
 
     def __str__(self):
-        return f"permutation {X2}->...->{Y1} <--> {Y2}->...->{Z1}"
+        return f"permutation {self.X2}->...->{self.Y1} <--> {self.Y2}->...->{self.Z1}"
 
 
 class Atsp3Opt(LocalOptimization):
@@ -63,14 +63,14 @@ class Atsp3Opt(LocalOptimization):
             Y1_id = random.randint(X1_id + 2, dimension - 3)
             Z1_id = random.randint(Y1_id + 2, dimension - 1)
 
-            X1 = visited_cities[X1_id]
-            X2 = visited_cities[X1_id + 1]
+            X1 = self.visited_cities[X1_id]
+            X2 = self.visited_cities[X1_id + 1]
 
-            Y1 = visited_cities[Y1_id]
-            Y2 = visited_cities[Y1_id + 1]
+            Y1 = self.visited_cities[Y1_id]
+            Y2 = self.visited_cities[Y1_id + 1]
 
-            Z1 = visited_cities[Z1_id]
-            Z2 = visited_cities[Z1_id + 1]
+            Z1 = self.visited_cities[Z1_id]
+            Z2 = self.visited_cities[Z1_id + 1]
 
             local_move = LocalMove3Opt(X1, X2, Y1, Y2, Z1, Z2)
 
@@ -124,7 +124,7 @@ class Atsp3Opt(LocalOptimization):
         self.visited_cities = updated_visited_cities
 
         self.total_distance -= distance_difference
-        self.lower_bound_value -= distance_difference
+        self.lower_bound_value = -1
 
     def objective_incr_local(self, lmove: LocalMove3Opt) -> Optional[Objective]:
         """

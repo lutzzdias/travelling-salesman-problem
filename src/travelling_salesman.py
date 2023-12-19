@@ -17,45 +17,37 @@
 
 from __future__ import annotations
 
-from typing import TextIO, Optional, Any, Set, List, Tuple
-from collections.abc import Iterable, Hashable
-import time
+from typing import Any, List, Optional, Set, TextIO, Tuple
+from enum import Enum
+
+from construction.new_lb_constructor import NewLbConstructor
 from local_solvers.atsp_3opt import Atsp3Opt
-from local_solvers.atsp_aco import Atsp3Aco
+from local_solvers.atsp_aco import AtspAco
+from local_solvers.atsp_shift_insert import AtspShiftInsert
 
-Objective = Any
-
-
-class Component:
-    def __init__(self, source: int, dest: int):
-        self.arc = (source, dest)
-
-    def __str__(self):
-        return f"source: {self.arc[0]}" f"dest: {self.arc[1]}"
-
-    @property
-    def cid(self) -> Hashable:
-        raise NotImplementedError
+Objective = int
 
 
-class Solution(Atsp3Aco):
-    def __init__(
-        self,
-        problem: Problem,
-        visited_cities: List[int],
-        unvisited_cities: Set[int],
-        total_distance: int,
-        lower_bound: int,
-    ):
-        self.problem: Problem = problem
-        self.visited_cities: List[int] = visited_cities
-        self.unvisited_cities: Set[int] = unvisited_cities
-        self.total_distance: int = total_distance
-        self.lower_bound_value: int = lower_bound
-        Atsp3Aco.__init__(self)
+class Implementation(Enum):
+    NEW_LB_3_OPT = 1
+    NEW_LB_ACO = 2
+    NEW_LB_SHIFT_INSERT = 3
+
+
+class BaseSolution:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.problem: Problem = kwargs["problem"]
+        self.visited_cities: List[int] = kwargs["visited_cities"]
+        self.unvisited_cities: Set[int] = kwargs["unvisited_cities"]
+        self.total_distance: int = kwargs["total_distance"]
+        self.lower_bound_value: float = kwargs["lower_bound"]
+        self.current_shortest_in: List[int] = [0 for _ in range(self.problem.dimension)]
+        self.current_shortest_out: List[int] = [
+            0 for _ in range(self.problem.dimension)
+        ]
 
     def __str__(self):
-        return f"distance: {self.total_distance}\npath: {self.visited_cities}\n"
+        return f"distance: {self.total_distance}" f"path: {self.visited_cities}"
 
     def output(self) -> str:
         """
@@ -66,22 +58,7 @@ class Solution(Atsp3Aco):
             + f"->{str(self.visited_cities[0])}"
         )
 
-        return f"The shortest path is {path} with a total distance of {self.total_distance}."
-
-    def copy(self) -> Solution:
-        """
-        Return a copy of this solution.
-
-        Note: changes to the copy must not affect the original
-        solution. However, this does not need to be a deepcopy.
-        """
-        return Solution(
-            self.problem,
-            self.visited_cities.copy(),
-            self.unvisited_cities.copy(),
-            self.total_distance,
-            self.lower_bound_value,
-        )
+        return f"The shortest path is: \n{path}\n with a total distance of {self.total_distance}."
 
     def is_feasible(self) -> bool:
         """
@@ -94,103 +71,99 @@ class Solution(Atsp3Aco):
         Return the objective value for this solution if defined, otherwise
         should return None
         """
-        return self.total_distance
-
-    def lower_bound(self) -> Optional[Objective]:
-        """
-        Return the lower bound value for this solution if defined,
-        otherwise return None
-        """
-        return self.lower_bound_value
-
-    def add_moves(self) -> Iterable[Component]:
-        """
-        Return an iterable (generator, iterator, or iterable object)
-        over all components that can be added to the solution
-        """
-
-        for city in self.unvisited_cities:
-            yield Component(self.visited_cities[-1], city)
-
-    def heuristic_add_move(self) -> Optional[Component]:
-        """
-        Return the next component to be added based on some heuristic
-        rule.
-        """
-        raise NotImplementedError
-
-    def add(self, component: Component) -> None:
-        """
-        Add a component to the solution.
-
-        Note: this invalidates any previously generated components and
-        local moves.
-        """
-
-        city_id: int = component.arc[1]
-
-        self.visited_cities.append(city_id)
-
-        self.unvisited_cities.remove(city_id)
-
-        distance: int = self.problem.distance_matrix[component.arc[0]][city_id]
-
-        self.total_distance += distance
-        self.lower_bound_value += distance
-
-        if len(self.unvisited_cities) == 0:
-            self.total_distance += self.problem.distance_matrix[city_id][
-                self.visited_cities[0]
-            ]
-            self.lower_bound_value += self.problem.distance_matrix[city_id][
-                self.visited_cities[0]
-            ]
-
-    def objective_incr_add(self, component: Component) -> Optional[Objective]:
-        """
-        Return the objective value increment resulting from adding a
-        component. If the objective value is not defined after adding the
-        component, return None.
-        """
-        return self.problem.distance_matrix[component.arc[0]][component.arc[1]]
-
-    def lower_bound_incr_add(self, component: Component) -> Optional[Objective]:
-        """
-        Return the lower bound increment resulting from adding a
-        component. If the lower bound is not defined after adding the
-        component, return None.
-        """
-        return self.problem.distance_matrix[component.arc[0]][component.arc[1]]
+        if self.is_feasible():
+            return self.total_distance
+        else:
+            return None
 
     def perturb(self, ks: int) -> None:
         """
         Perturb the solution in place. The amount of perturbation is
         controlled by the parameter ks (kick strength)
         """
+        # TODO
+        # Generate random aleatory moves (for ILS)
         raise NotImplementedError
 
-    def components(self) -> Iterable[Component]:
+
+class SolutionNewLb3Opt(BaseSolution, NewLbConstructor, Atsp3Opt):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    def copy(self) -> SolutionNewLb3Opt:
         """
-        Returns an iterable to the components of a solution
+        Return a copy of this solution.
+
+        Note: changes to the copy must not affect the original
+        solution. However, this does not need to be a deepcopy.
         """
-        for i in range(0, len(self.visited_cities) - 1):
-            yield Component(self.visited_cities[i], self.visited_cities[i + 1])
+        return SolutionNewLb3Opt(
+            problem=self.problem,
+            visited_cities=self.visited_cities.copy(),
+            unvisited_cities=self.unvisited_cities.copy(),
+            total_distance=self.total_distance,
+            lower_bound=self.lower_bound_value,
+        )
+
+
+class SolutionNewLbShiftInsert(BaseSolution, NewLbConstructor, AtspShiftInsert):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    def copy(self) -> SolutionNewLbShiftInsert:
+        """
+        Return a copy of this solution.
+
+        Note: changes to the copy must not affect the original
+        solution. However, this does not need to be a deepcopy.
+        """
+        return SolutionNewLbShiftInsert(
+            problem=self.problem,
+            visited_cities=self.visited_cities.copy(),
+            unvisited_cities=self.unvisited_cities.copy(),
+            total_distance=self.total_distance,
+            lower_bound=self.lower_bound_value,
+        )
+
+
+class SolutionNewLbAco(BaseSolution, NewLbConstructor, AtspAco):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.pheromones: List[List[float]] = [
+            [0.0] * kwargs["problem"].dimension
+        ] * kwargs["problem"].dimension
+        self.ants_per_iteration: int = 200
+        self.degradation_factor = 0.9
+        super().__init__(*args, **kwargs)
+
+    def copy(self) -> SolutionNewLbAco:
+        """
+        Return a copy of this solution.
+
+        Note: changes to the copy must not affect the original
+        solution. However, this does not need to be a deepcopy.
+        """
+        return SolutionNewLbAco(
+            problem=self.problem,
+            visited_cities=self.visited_cities.copy(),
+            unvisited_cities=self.unvisited_cities.copy(),
+            total_distance=self.total_distance,
+            lower_bound=self.lower_bound_value,
+        )
 
 
 class Problem:
     def __init__(self, dimension: int, distance_matrix: Tuple[Tuple[int, ...], ...]):
-        self.dimension = dimension  # Number of cities
+        # Number of cities
+        self.dimension = dimension
         # Distance matrix where distance_matrix[i][j] is the distance between city i and city j
         self.distance_matrix = distance_matrix
 
-        self.lower_bound: int = self._initialize_lower_bound()
+        # list with ordered index of cities by distance
+        self.shortest_out: List[List[int]] = []
+        self.shortest_in: List[List[int]] = []
 
-    def _initialize_lower_bound(self) -> int:
-        """
-        Initialize the lower bound for the problem
-        """
-
-        return 0
+        # initial lower bound
+        self.lower_bound: float = self._initialize_lower_bound()
 
     def __str__(self):
         string = f"dimension: {self.dimension}\ndistance matrix:\n"
@@ -201,6 +174,31 @@ class Problem:
             string += "\n"
 
         return string
+
+    def _initialize_lower_bound(self) -> float:
+        """
+        Initialize the lower bound for the problem
+        """
+
+        raw_lower_bound: int = 0
+
+        for i in range(self.dimension):
+            row = list(self.distance_matrix[i])
+            sorted_row = sorted(enumerate(row), key=lambda x: x[1])
+            self.shortest_out.append([index for index, _ in sorted_row])
+
+            column = [row[i] for row in self.distance_matrix]
+            sorted_column = sorted(enumerate(column), key=lambda x: x[1])
+            self.shortest_in.append([index for index, _ in sorted_column])
+
+            raw_lower_bound += (
+                self.distance_matrix[i][self.shortest_out[i][0]]
+                + self.distance_matrix[self.shortest_in[i][0]][i]
+            )
+
+        lower_bound = raw_lower_bound / 2
+
+        return lower_bound
 
     @classmethod
     def from_textio(cls, f: TextIO) -> Problem:
@@ -227,14 +225,35 @@ class Problem:
 
         return cls(dimension, distance_matrix)
 
-    def empty_solution(self) -> Solution:
+    def empty_solution(self, imp: int) -> BaseSolution:
         """
         Create an empty solution (i.e. with no components).
         """
-        return Solution(
-            problem=self,
-            visited_cities=[0],
-            unvisited_cities=set(range(1, self.dimension)),
-            total_distance=0,
-            lower_bound=self.lower_bound,
-        )
+
+        match imp:
+            case Implementation.NEW_LB_3_OPT:
+                return SolutionNewLb3Opt(
+                    problem=self,
+                    visited_cities=[0],
+                    unvisited_cities=set(range(1, self.dimension)),
+                    total_distance=0,
+                    lower_bound=self.lower_bound,
+                )
+            case Implementation.NEW_LB_ACO:
+                return SolutionNewLbAco(
+                    problem=self,
+                    visited_cities=[0],
+                    unvisited_cities=set(range(1, self.dimension)),
+                    total_distance=0,
+                    lower_bound=self.lower_bound,
+                )
+            case Implementation.NEW_LB_SHIFT_INSERT:
+                return SolutionNewLbShiftInsert(
+                    problem=self,
+                    visited_cities=[0],
+                    unvisited_cities=set(range(1, self.dimension)),
+                    total_distance=0,
+                    lower_bound=self.lower_bound,
+                )
+            case _:
+                raise RuntimeError("Invalid implementation")
