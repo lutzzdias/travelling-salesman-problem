@@ -12,14 +12,14 @@ class Construction:
         Return an iterable (generator, iterator, or iterable object)
         over all components that can be added to the solution
         """
-        raise NotImplementedError
+        pass
 
     def heuristic_add_move(self) -> Optional[Component]:
         """
         Return the next component to be added based on some heuristic
         rule.
         """
-        raise NotImplementedError
+        pass
 
     def add(self, component: Component) -> None:
         """
@@ -28,7 +28,7 @@ class Construction:
         Note: this invalidates any previously generated components and
         local moves.
         """
-        raise NotImplementedError
+        pass
 
     def objective_incr_add(self, component: Component) -> Optional[Objective]:
         """
@@ -36,7 +36,7 @@ class Construction:
         component. If the objective value is not defined after adding the
         component, return None.
         """
-        raise NotImplementedError
+        pass
 
     def lower_bound_incr_add(self, component: Component) -> Optional[Objective]:
         """
@@ -44,10 +44,10 @@ class Construction:
         component. If the lower bound is not defined after adding the
         component, return None.
         """
-        raise NotImplementedError
+        pass
 
     def components(self) -> Iterable[Component]:
         """
         Returns an iterable to the components of a solution
         """
-        raise NotImplementedError
+        pass

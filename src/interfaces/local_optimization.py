@@ -12,7 +12,7 @@ class LocalOptimization:
         Return an iterable (generator, iterator, or iterable object)
         over all local moves that can be applied to the solution
         """
-        raise NotImplementedError
+        pass
 
     def random_local_move(self) -> Optional[LocalMove]:
         """
@@ -21,7 +21,7 @@ class LocalOptimization:
         Note: repeated calls to this method may return the same
         local move.
         """
-        raise NotImplementedError
+        pass
 
     def random_local_moves_wor(self) -> Iterable[LocalMove]:
         """
@@ -30,7 +30,7 @@ class LocalOptimization:
         the solution.
         """
 
-        raise NotImplementedError
+        pass
 
     def step(self, lmove: LocalMove) -> None:
         """
@@ -40,7 +40,7 @@ class LocalOptimization:
         local moves.
         """
 
-        raise NotImplementedError
+        pass
 
     def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
         """
@@ -48,4 +48,4 @@ class LocalOptimization:
         local move. If the objective value is not defined after
         applying the local move return None.
         """
-        raise NotImplementedError
+        pass
