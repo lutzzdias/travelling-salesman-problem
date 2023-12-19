@@ -135,11 +135,6 @@ class NewLbConstructor(Construction):
         # zero shortest in
         zsi = self.problem.shortest_in[0][csi[0]]
 
-        # it is the last city, shortest_in for 0 being arc[1] is correct
-        if len(uc) == 0 and zsi == arc[1]:
-            print("heyhfasefd")
-            return lb, csi, cso
-
         # shortest in for 0 is invalid (arc[1])
         if self.problem.shortest_in[0][csi[0]] == arc[1]:
             # remove invalid value from lower bound
