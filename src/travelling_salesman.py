@@ -19,47 +19,24 @@ from __future__ import annotations
 
 import random
 from collections.abc import Iterable
-from typing import Any, List, Optional, Set, TextIO, Tuple
+from typing import Any, List, Optional, Set, TextIO, Tuple, TypeVar
 
 from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
+
+from construction.new_lb_constructor import NewLbConstructor
+from local_solvers.atsp_3opt import Atsp3Opt
+from local_solvers.atsp_aco import AtspAco
 
 Objective = Any
 
 
-class Component:
-    def __init__(self, source: int, dest: int):
-        self.arc = (source, dest)
-
-    def __str__(self):
-        return f"source: {self.arc[0]}" f"dest: {self.arc[1]}"
-
-
-class LocalMove:
-    def __init__(self, city_index: int, destination_index: int):
-        self.city_index: int = city_index
-        self.destination_index: int = destination_index
-
-    def __str__(self):
-        return (
-            f"city_index: {self.city_index}"
-            f"destination_index: {self.destination_index}"
-        )
-
-
-class Solution:
-    def __init__(
-        self,
-        problem: Problem,
-        visited_cities: List[int],
-        unvisited_cities: Set[int],
-        total_distance: int,
-        lower_bound: float,
-    ):
-        self.problem: Problem = problem
-        self.visited_cities: List[int] = visited_cities
-        self.unvisited_cities: Set[int] = unvisited_cities
-        self.total_distance: int = total_distance
-        self.lower_bound_value: float = lower_bound
+class BaseSolution:
+    def __init__(self, *args, **kwargs):
+        self.problem: Problem = kwargs["problem"]
+        self.visited_cities: List[int] = kwargs["visited_cities"]
+        self.unvisited_cities: Set[int] = kwargs["unvisited_cities"]
+        self.total_distance: int = kwargs["total_distance"]
+        self.lower_bound_value: float = kwargs["lower_bound"]
         self.current_shortest_in: List[int] = [0 for _ in range(self.problem.dimension)]
         self.current_shortest_out: List[int] = [
             0 for _ in range(self.problem.dimension)
@@ -79,21 +56,6 @@ class Solution:
 
         return f"The shortest path is: \n{path}\n with a total distance of {self.total_distance}."
 
-    def copy(self) -> Solution:
-        """
-        Return a copy of this solution.
-
-        Note: changes to the copy must not affect the original
-        solution. However, this does not need to be a deepcopy.
-        """
-        return Solution(
-            self.problem,
-            self.visited_cities.copy(),
-            self.unvisited_cities.copy(),
-            self.total_distance,
-            self.lower_bound_value,
-        )
-
     def is_feasible(self) -> bool:
         """
         Return whether the solution is feasible or not
@@ -110,367 +72,6 @@ class Solution:
         else:
             return None
 
-    def lower_bound(self) -> Optional[Objective]:
-        """
-        Return the lower bound value for this solution if defined,
-        otherwise return None
-        """
-        return self.lower_bound_value
-
-    def add_moves(self) -> Iterable[Component]:
-        """
-        Return an iterable (generator, iterator, or iterable object)
-        over all components that can be added to the solution
-        """
-
-        for city in self.unvisited_cities:
-            yield Component(self.visited_cities[-1], city)
-
-    def _is_move_valid(self, city_index: int, dest: int) -> bool:
-        """
-        A move is valid if the destination is not the city itself,
-        the previous city or the next city (redundant)
-        """
-
-        return (
-            city_index != dest
-            and (city_index - 1) % self.problem.dimension != dest
-            and (city_index - 2) % self.problem.dimension != dest
-        )
-
-    def local_moves(self) -> Iterable[LocalMove]:
-        """
-        Return an iterable (generator, iterator, or iterable object)
-        over all local moves that can be applied to the solution
-        """
-        for city_id in range(self.problem.dimension):
-            for destination in range(self.problem.dimension):
-                # returns all valid local moves
-                if self._is_move_valid(city_id, destination):
-                    yield LocalMove(city_id, destination)
-
-    def random_local_move(self) -> Optional[LocalMove]:
-        """
-        Return a random local move that can be applied to the solution.
-
-        Note: repeated calls to this method may return the same
-        local move.
-        """
-        city_index = random.randint(0, self.problem.dimension - 1)
-
-        dest = random.randint(1, self.problem.dimension - 3)
-        final_dest = (city_index + dest) % self.problem.dimension
-
-        local_move = LocalMove(city_index, final_dest)
-
-        while not self._is_move_valid(city_index, final_dest):
-            dest = random.randint(1, self.problem.dimension - 3)
-            final_dest = (city_index + dest) % self.problem.dimension
-
-            local_move = LocalMove(city_index, final_dest)
-
-        return local_move
-
-    def random_local_moves_wor(self) -> Iterable[LocalMove]:
-        """
-        Return an iterable (generator, iterator, or iterable object)
-        over all local moves (in random order) that can be applied to
-        the solution.
-        """
-        local_moves = list(self.local_moves())
-        for i in sparse_fisher_yates_iter(len(local_moves)):
-            yield local_moves[i]
-
-    def heuristic_add_move(self) -> Optional[Component]:
-        """
-        Return the next component to be added based on some heuristic
-        rule.
-        """
-        raise NotImplementedError
-
-    def add(self, component: Component) -> None:
-        """
-        Add a component to the solution.
-
-        Note: this invalidates any previously generated components and
-        local moves.
-        """
-
-        city_id: int = component.arc[1]
-
-        self.visited_cities.append(city_id)
-        self.unvisited_cities.remove(city_id)
-
-        distance: int = self.problem.distance_matrix[component.arc[0]][city_id]
-        self.total_distance += distance
-
-        (
-            self.lower_bound_value,
-            self.current_shortest_in,
-            self.current_shortest_out,
-        ) = self._update_lower_bound(
-            component.arc,
-            self.lower_bound_value,
-            self.current_shortest_in,
-            self.current_shortest_out,
-        )
-
-        if len(self.unvisited_cities) == 0:
-            self.total_distance += self.problem.distance_matrix[city_id][0]
-
-    def _update_lower_bound(
-        self,
-        arc: Tuple[int, int],
-        lb: float,  # lower bound
-        csi: List[int],  # current shortest in
-        cso: List[int],  # current shortest out
-    ) -> Tuple[float, List[int], List[int]]:
-        """ "
-        Calculate lower bound after adding a component, does not change the solution,
-        only the parameters passed in.
-        """
-        # Get shortest in of the added city
-        si = self.problem.shortest_in[arc[1]][csi[arc[1]]]
-        # Get shortest out of the previously last city
-        so = self.problem.shortest_out[arc[0]][cso[arc[0]]]
-
-        # Get distance of shortest in and out of respective cities
-        sid = self.problem.distance_matrix[si][arc[1]]
-        sod = self.problem.distance_matrix[arc[0]][so]
-
-        # Remove previous idealistic values from lower bound
-        lb -= (sid + sod) / 2
-
-        # Get real distance
-        d = self.problem.distance_matrix[arc[0]][arc[1]]
-
-        # update lower bound with real distance
-        lb += d
-
-        # update shortest out for arc[1]
-        # nso = next shortest out
-        nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
-
-        # it is the last city, shortest_out being 0 is correct
-        if len(self.unvisited_cities) <= 1 and nso == 0:
-            return lb, csi, cso
-
-        # shortest out for arc[1] is invalid
-        elif nso == arc[0] or nso == 0:
-            # remove invalid value from lower bound
-            lb -= self.problem.distance_matrix[arc[1]][nso] / 2
-
-            # update current shortest out
-            nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
-
-            # while the new shortest out is invalid, move to the next
-            while nso in self.visited_cities:
-                cso[arc[1]] += 1
-                nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
-
-            # add new valid value to lower bound
-            lb += self.problem.distance_matrix[arc[1]][nso] / 2
-
-        # zero shortest in
-        zsi = self.problem.shortest_in[0][csi[0]]
-
-        # it is the last city, shortest_in for 0 being arc[1] is correct
-        if len(self.unvisited_cities) == 0 and zsi == arc[1]:
-            return lb, csi, cso
-
-        # shortest in for 0 is invalid (arc[1])
-        if self.problem.shortest_in[0][csi[0]] == arc[1]:
-            # remove invalid value from lower bound
-            lb -= self.problem.distance_matrix[zsi][0] / 2
-
-            # update current shortest in for zero
-            # nzsi = next zero shortest in
-            nzsi = self.problem.shortest_in[0][csi[0]]
-
-            # while the new shortest in is invalid, move to the next
-            while nzsi in self.visited_cities:
-                csi[0] += 1
-                nzsi = self.problem.shortest_in[0][csi[0]]
-
-            # add new valid value to lower bound
-            lb += self.problem.distance_matrix[nzsi][0] / 2
-
-        # for every city not visited yet
-        for city in self.unvisited_cities:
-            # * arc[0] was shortest in -> invalid
-            # if current shortest in is arc[0] it is invalid
-            if self.problem.shortest_in[city][csi[city]] == arc[0]:
-                # get shortest in (invalid)
-                # isi = invalid shortest in
-                isi = self.problem.shortest_in[city][csi[city]]
-
-                # subtract invalid shortest in from lower bound
-                lb -= self.problem.distance_matrix[isi][city] / 2
-
-                # update current shortest in
-                csi[city] += 1
-
-                # get new shortest in
-                # nsi = new shortest in
-                nsi = self.problem.shortest_in[city][csi[city]]
-
-                # while the new shortest in is invalid, move to the next
-                while nsi in self.visited_cities:
-                    csi[city] += 1
-                    nsi = self.problem.shortest_in[city][csi[city]]
-
-                # add new valid value to lower bound
-                lb += self.problem.distance_matrix[nsi][city] / 2
-
-            # * arc[1] was shortest out -> invalid
-            # if current shortest out is arc[1] it is invalid
-            if self.problem.shortest_out[city][cso[city]] == arc[1]:
-                # get shortest out (invalid)
-                # iso = invalid shortest out
-                iso = self.problem.shortest_out[city][cso[city]]
-
-                # subtract invalid shortest out from lower bound
-                lb -= self.problem.distance_matrix[city][iso] / 2
-
-                # update current shortest out
-                cso[city] += 1
-
-                # get new shortest out
-                # nso = new shortest out
-                nso = self.problem.shortest_out[city][cso[city]]
-
-                # while the new shortest out is invalid, move to the next
-                # 0 is always valid
-                while nso in self.visited_cities and nso != 0:
-                    cso[city] += 1
-                    nso = self.problem.shortest_out[city][cso[city]]
-
-                # add new valid value to lower bound
-                lb += self.problem.distance_matrix[city][nso] / 2
-
-        return lb, csi, cso
-
-    def step(self, lmove: LocalMove) -> None:
-        """
-        Apply a local move to the solution.
-
-        Note: this invalidates any previously generated components and
-        local moves.
-        """
-        # invalidate lower bound
-        self.lower_bound_value = -1
-
-        city = self.visited_cities[lmove.city_index]
-        prev_city = self.visited_cities[lmove.city_index - 1]
-        next_city = self.visited_cities[lmove.city_index + 1]
-
-        dest = self.visited_cities[lmove.destination_index]
-        prev_dest = self.visited_cities[lmove.destination_index - 1]
-
-        self._calculate_local_move_distance(
-            city, prev_city, next_city, dest, prev_dest, self.total_distance
-        )
-
-        # remove city from initial index
-        self.visited_cities.pop(lmove.city_index)
-
-        # insert city in destination index
-        self.visited_cities.insert(lmove.destination_index, city)
-
-    def _calculate_local_move_distance(
-        self,
-        city: int,
-        prev_city: int,
-        next_city: int,
-        dest: int,
-        prev_dest: int,
-        total_distance: int,
-    ) -> int:
-        """
-        Calculate the distance of a local move and update the passed in total_distance
-        """
-        # get distance between city and prev
-        city_prev_dist = self.problem.distance_matrix[prev_city][city]
-        # remove distance between city and prev
-        total_distance -= city_prev_dist
-
-        # get distance between city and next
-        city_next_dist = self.problem.distance_matrix[city][next_city]
-        # remove distance between city and next
-        total_distance -= city_next_dist
-
-        # get distance between prev and next
-        post_dist = self.problem.distance_matrix[prev_city][next_city]
-        # add distance between prev and next
-        total_distance += post_dist
-
-        # get distance between city before dest and city in dest
-        dest_dist = self.problem.distance_matrix[prev_dest][dest]
-        # remove distance between city before dest and city in dest
-        total_distance -= dest_dist
-
-        # get distance between city and dest
-        dest_city_dist = self.problem.distance_matrix[city][dest]
-        # add distance between city and dest
-        total_distance += dest_city_dist
-
-        # get distance between prev dest and city
-        dest_prev_dist = self.problem.distance_matrix[prev_dest][city]
-        # add distance between prev dest and city
-        total_distance += dest_prev_dist
-
-        return total_distance
-
-    def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
-        """
-        Return the objective value increment resulting from applying a
-        local move. If the objective value is not defined after
-        applying the local move return None.
-        """
-
-        city = self.visited_cities[lmove.city_index]
-        prev_city = self.visited_cities[lmove.city_index - 1]
-        next_city = self.visited_cities[lmove.city_index + 1]
-
-        dest = self.visited_cities[lmove.destination_index]
-        prev_dest = self.visited_cities[lmove.destination_index - 1]
-
-        total_distance = self.total_distance
-
-        self._calculate_local_move_distance(
-            city, prev_city, next_city, dest, prev_dest, total_distance
-        )
-
-        return total_distance - self.total_distance
-
-    def objective_incr_add(self, component: Component) -> Optional[Objective]:
-        """
-        Return the objective value increment resulting from adding a
-        component. If the objective value is not defined after adding the
-        component, return None.
-        """
-        return self.problem.distance_matrix[component.arc[0]][component.arc[1]]
-
-    def lower_bound_incr_add(self, component: Component) -> Optional[Objective]:
-        """
-        Return the lower bound increment resulting from adding a
-        component. If the lower bound is not defined after adding the
-        component, return None.
-        """
-        arc = component.arc
-        lb = self.lower_bound_value
-        csi = self.current_shortest_in.copy()
-        cso = self.current_shortest_out.copy()
-
-        result = self._update_lower_bound(
-            arc,
-            lb,
-            csi,
-            cso,
-        )
-
-        return result[0] - self.lower_bound_value
-
     def perturb(self, ks: int) -> None:
         """
         Perturb the solution in place. The amount of perturbation is
@@ -480,12 +81,50 @@ class Solution:
         # Generate random aleatory moves (for ILS)
         raise NotImplementedError
 
-    def components(self) -> Iterable[Component]:
+
+class SolutionNewLb3Opt(BaseSolution, NewLbConstructor, Atsp3Opt):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def copy(self) -> SolutionNewLb3Opt:
         """
-        Returns an iterable to the components of a solution
+        Return a copy of this solution.
+
+        Note: changes to the copy must not affect the original
+        solution. However, this does not need to be a deepcopy.
         """
-        for i in range(0, len(self.visited_cities) - 1):
-            yield Component(self.visited_cities[i], self.visited_cities[i + 1])
+        return SolutionNewLb3Opt(
+            problem=self.problem,
+            visited_cities=self.visited_cities.copy(),
+            unvisited_cities=self.unvisited_cities.copy(),
+            total_distance=self.total_distance,
+            lower_bound=self.lower_bound_value,
+        )
+
+
+class SolutionNewLbAco(BaseSolution, NewLbConstructor, AtspAco):
+    def __init__(self, *args, **kwargs):
+        self.pheromones: List[List[float]] = [
+            [0.0] * kwargs["problem"].dimension
+        ] * kwargs["problem"].dimension
+        self.ants_per_iteration: int = 200
+        self.degradation_factor = 0.9
+        super().__init__(*args, **kwargs)
+
+    def copy(self) -> SolutionNewLbAco:
+        """
+        Return a copy of this solution.
+
+        Note: changes to the copy must not affect the original
+        solution. However, this does not need to be a deepcopy.
+        """
+        return SolutionNewLbAco(
+            problem=self.problem,
+            visited_cities=self.visited_cities.copy(),
+            unvisited_cities=self.unvisited_cities.copy(),
+            total_distance=self.total_distance,
+            lower_bound=self.lower_bound_value,
+        )
 
 
 class Problem:
@@ -562,14 +201,25 @@ class Problem:
 
         return cls(dimension, distance_matrix)
 
-    def empty_solution(self) -> Solution:
+    def empty_solution(self, imp: int) -> Solution:
         """
         Create an empty solution (i.e. with no components).
         """
-        return Solution(
-            problem=self,
-            visited_cities=[0],
-            unvisited_cities=set(range(1, self.dimension)),
-            total_distance=0,
-            lower_bound=self.lower_bound,
-        )
+
+        match imp:
+            case 1:
+                return SolutionNewLb3Opt(
+                    problem=self,
+                    visited_cities=[0],
+                    unvisited_cities=set(range(1, self.dimension)),
+                    total_distance=0,
+                    lower_bound=self.lower_bound,
+                )
+            case 2:
+                return SolutionNewLbAco(
+                    problem=self,
+                    visited_cities=[0],
+                    unvisited_cities=set(range(1, self.dimension)),
+                    total_distance=0,
+                    lower_bound=self.lower_bound,
+                )
