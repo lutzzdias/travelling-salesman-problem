@@ -4,8 +4,6 @@ import random
 import time
 from sys import stdin
 
-from typing import Any, List, Optional, Set, TextIO, Tuple, TypeVar, Generic
-
 
 from travelling_salesman import Problem, BaseSolution, SolutionNewLb3Opt
 from local_solvers.atsp_aco import LocalMoveAco
@@ -186,7 +184,7 @@ def beam_search(problem, imp: int, beam_width=10):
 def local_search_first(solution: BaseSolution):
     available_local_moves = solution.random_local_moves_wor()
 
-    next_move: LocalMove = next(available_local_moves, None)
+    next_move = next(available_local_moves, None)
 
     while next_move is not None:
         if solution.objective_incr_local(next_move) > 0:
@@ -194,7 +192,7 @@ def local_search_first(solution: BaseSolution):
 
             available_local_moves = solution.random_local_moves_wor()
 
-        next_move: LocalMove = next(available_local_moves, None)
+        next_move = next(available_local_moves, None)
 
     return solution
 
@@ -202,7 +200,7 @@ def local_search_first(solution: BaseSolution):
 def local_search_best(solution: BaseSolution):
     available_local_moves = solution.random_local_moves_wor()
 
-    next_move: LocalMove = next(available_local_moves, None)
+    next_move = next(available_local_moves, None)
 
     while next_move is not None:
         best_move = next_move
@@ -222,7 +220,7 @@ def local_search_best(solution: BaseSolution):
 
         available_local_moves = solution.random_local_moves_wor()
 
-        next_move: LocalMove = next(available_local_moves, None)
+        next_move = next(available_local_moves, None)
 
     return solution
 
@@ -254,6 +252,6 @@ def ACO(solution: BaseSolution) -> BaseSolution:
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
-    solution = random_construction(problem)
+    solution = random_construction(problem, 3)
     print(f"lb:  {solution.lower_bound()}")
     print(f"td:  {solution.objective()}")
