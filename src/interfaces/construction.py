@@ -1,6 +1,5 @@
 from collections.abc import Iterable
-from typing import Any, List, Optional, Set, TextIO, Tuple
-
+from typing import Any, Optional
 
 from interfaces.component import Component
 

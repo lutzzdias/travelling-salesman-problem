@@ -3,7 +3,8 @@ from typing import Iterable, Optional
 from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
 from interfaces.local_move import LocalMove
 from interfaces.local_optimization import LocalOptimization
-from travelling_salesman import Objective
+
+Objective = int
 
 
 class LocalMoveShiftInsert(LocalMove):

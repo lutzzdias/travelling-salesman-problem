@@ -1,5 +1,5 @@
-from collections.abc import Iterable, Hashable
-from typing import TextIO, Optional, Any, Set, List, Tuple
+from collections.abc import Iterable
+from typing import Optional, Any, List
 import random
 import multiprocessing
 
@@ -20,7 +20,7 @@ class LocalMoveAco(LocalMove):
 
 
 class AtspAco(LocalOptimization):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.pheromones: List[List[float]] = [
             [0.0] * self.problem.dimension
         ] * self.problem.dimension
@@ -28,8 +28,8 @@ class AtspAco(LocalOptimization):
         self.degradation_factor = 0.9
 
     def _local_move(self, _):
-        ALPHA: int = 0.9
-        BETA: int = 1.5
+        ALPHA: float = 0.9
+        BETA: float = 1.5
 
         dimension: int = self.problem.dimension
 

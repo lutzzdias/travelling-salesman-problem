@@ -24,10 +24,11 @@ from local_solvers.atsp_3opt import Atsp3Opt
 from local_solvers.atsp_aco import AtspAco
 from local_solvers.atsp_shift_insert import AtspShiftInsert
 
-Objective = Any
+Objective = int
+
 
 class BaseSolution:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.problem: Problem = kwargs["problem"]
         self.visited_cities: List[int] = kwargs["visited_cities"]
         self.unvisited_cities: Set[int] = kwargs["unvisited_cities"]
@@ -79,7 +80,7 @@ class BaseSolution:
 
 
 class SolutionNewLb3Opt(BaseSolution, NewLbConstructor, Atsp3Opt):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
     def copy(self) -> SolutionNewLb3Opt:
@@ -96,9 +97,10 @@ class SolutionNewLb3Opt(BaseSolution, NewLbConstructor, Atsp3Opt):
             total_distance=self.total_distance,
             lower_bound=self.lower_bound_value,
         )
-    
+
+
 class SolutionNewLbShiftInsert(BaseSolution, NewLbConstructor, AtspShiftInsert):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
     def copy(self) -> SolutionNewLbShiftInsert:
@@ -108,7 +110,7 @@ class SolutionNewLbShiftInsert(BaseSolution, NewLbConstructor, AtspShiftInsert):
         Note: changes to the copy must not affect the original
         solution. However, this does not need to be a deepcopy.
         """
-        return SolutionNewLb3Opt(
+        return SolutionNewLbShiftInsert(
             problem=self.problem,
             visited_cities=self.visited_cities.copy(),
             unvisited_cities=self.unvisited_cities.copy(),
@@ -118,7 +120,7 @@ class SolutionNewLbShiftInsert(BaseSolution, NewLbConstructor, AtspShiftInsert):
 
 
 class SolutionNewLbAco(BaseSolution, NewLbConstructor, AtspAco):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.pheromones: List[List[float]] = [
             [0.0] * kwargs["problem"].dimension
         ] * kwargs["problem"].dimension
@@ -246,3 +248,5 @@ class Problem:
                     total_distance=0,
                     lower_bound=self.lower_bound,
                 )
+            case _:
+                raise RuntimeError("Invalid implementation")
