@@ -12,7 +12,7 @@ class NewLbComponent(Component):
         self.arc = (source, dest)
 
     def __str__(self):
-        return f"source: {self.arc[0]}" f"dest: {self.arc[1]}"
+        return f"source: {self.arc[0]} - dest: {self.arc[1]}"
 
 
 class NewLbConstructor(Construction):
@@ -71,6 +71,7 @@ class NewLbConstructor(Construction):
             self.lower_bound_value,
             self.current_shortest_in,
             self.current_shortest_out,
+            self.unvisited_cities,
         )
 
         if len(self.unvisited_cities) == 0:
@@ -82,8 +83,9 @@ class NewLbConstructor(Construction):
         lb: float,  # lower bound
         csi: List[int],  # current shortest in
         cso: List[int],  # current shortest out
+        uc: List[int],  # unvisited cities
     ) -> Tuple[float, List[int], List[int]]:
-        """ "
+        """
         Calculate lower bound after adding a component, does not change the solution,
         only the parameters passed in.
         """
@@ -110,7 +112,8 @@ class NewLbConstructor(Construction):
         nso = self.problem.shortest_out[arc[1]][cso[arc[1]]]
 
         # it is the last city, shortest_out being 0 is correct
-        if len(self.unvisited_cities) < 1:
+        # not self.unvisited_cities because it caused errors in the lb_incr_add
+        if len(uc) == 0:
             return lb, csi, cso
 
         # shortest out for arc[1] is invalid
@@ -133,7 +136,8 @@ class NewLbConstructor(Construction):
         zsi = self.problem.shortest_in[0][csi[0]]
 
         # it is the last city, shortest_in for 0 being arc[1] is correct
-        if len(self.unvisited_cities) == 0 and zsi == arc[1]:
+        if len(uc) == 0 and zsi == arc[1]:
+            print("heyhfasefd")
             return lb, csi, cso
 
         # shortest in for 0 is invalid (arc[1])
@@ -154,7 +158,7 @@ class NewLbConstructor(Construction):
             lb += self.problem.distance_matrix[nzsi][0] / 2
 
         # for every city not visited yet
-        for city in self.unvisited_cities:
+        for city in uc:
             # * arc[0] was shortest in -> invalid
             # if current shortest in is arc[0] it is invalid
             if self.problem.shortest_in[city][csi[city]] == arc[0]:
@@ -226,12 +230,15 @@ class NewLbConstructor(Construction):
         lb = self.lower_bound_value
         csi = self.current_shortest_in.copy()
         cso = self.current_shortest_out.copy()
+        uc = self.unvisited_cities.copy()
+        uc.remove(arc[1])
 
         result = self._update_lower_bound(
             arc,
             lb,
             csi,
             cso,
+            uc,
         )
 
         return result[0] - self.lower_bound_value
