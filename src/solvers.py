@@ -1,7 +1,4 @@
-import math
-import operator
-import random
-import time
+import math, operator, random, time
 from sys import stdin
 
 
@@ -9,6 +6,7 @@ from travelling_salesman import Problem, BaseSolution, SolutionNewLb3Opt
 from local_solvers.atsp_aco import LocalMoveAco
 
 
+# Completely random construction
 def random_construction(problem: Problem, imp: int) -> BaseSolution:
     solution = problem.empty_solution(imp)
     components = list(solution.add_moves())
@@ -20,6 +18,7 @@ def random_construction(problem: Problem, imp: int) -> BaseSolution:
     return solution
 
 
+# if there is a tie, the first element is always picked
 def greedy_construction(problem: Problem, imp: int) -> BaseSolution:
     solution = problem.empty_solution(imp)
     components_iterator = solution.add_moves()
@@ -43,12 +42,12 @@ def greedy_construction(problem: Problem, imp: int) -> BaseSolution:
 
         solution.add(best_component)
         components_iterator = solution.add_moves()
-        component = next(components_iterator, None)  # type: ignore
+        component = next(components_iterator, None)
 
     return solution
 
 
-# random greedy construction -> will pick randomly if there is a tie
+# will pick randomly if there is a tie
 def greedy_construction_random_tie_break(problem, imp: int) -> BaseSolution:
     solution = problem.empty_solution(imp)
     components_iterator = solution.add_moves()
@@ -77,7 +76,7 @@ def greedy_construction_random_tie_break(problem, imp: int) -> BaseSolution:
     return solution
 
 
-# random adaptive greedy construction -> will pick randomly among the components that are within a certain threshold
+# will pick randomly among the components that are within a certain threshold
 def greedy_randomized_adaptive_construction(
     problem,
     imp: int,
@@ -114,7 +113,7 @@ def greedy_randomized_adaptive_construction(
     return solution
 
 
-# grasp -> will run the greedy_randomized_adaptive_construction for a certain amount of time and return the best solution
+# runs the greedy_randomized_adaptive_construction for a certain amount of time and returns the best solution
 def grasp(problem, budget, imp: int, alpha=0) -> BaseSolution:
     # budget is the amount of time it will be allowed to run
     start = time.perf_counter()
@@ -133,7 +132,7 @@ def grasp(problem, budget, imp: int, alpha=0) -> BaseSolution:
     return best_solution
 
 
-# TODO: Check this
+# starts with wide search and then narrows down
 def beam_search(problem, imp: int, beam_width=10):
     solution = problem.empty_solution(imp)
 
@@ -178,10 +177,9 @@ def beam_search(problem, imp: int, beam_width=10):
 
             current.append((lower_bound, solution))
 
-    return best_solution
 
-
-def local_search_first(solution: BaseSolution):
+# tries local moves and picks the first one that improves the objective
+def first_improvement(solution: BaseSolution):
     available_local_moves = solution.random_local_moves_wor()
 
     next_move = next(available_local_moves, None)
@@ -197,7 +195,8 @@ def local_search_first(solution: BaseSolution):
     return solution
 
 
-def local_search_best(solution: BaseSolution):
+# tries all local moves and picks the best improvement of them
+def best_improvement(solution: BaseSolution):
     available_local_moves = solution.random_local_moves_wor()
 
     next_move = next(available_local_moves, None)
@@ -225,12 +224,13 @@ def local_search_best(solution: BaseSolution):
     return solution
 
 
+# tries to find best local move with backwards memory (ants)
 def ACO(solution: BaseSolution) -> BaseSolution:
     best_solution = solution.copy()
 
     ITERATIONS: int = 50
 
-    for iteration in range(ITERATIONS):
+    for _ in range(ITERATIONS):
         cycles = list(solution.local_moves())
 
         # elitism
