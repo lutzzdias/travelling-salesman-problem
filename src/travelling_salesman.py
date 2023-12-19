@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from typing import Any, List, Optional, Set, TextIO, Tuple
+from enum import Enum
 
 from construction.new_lb_constructor import NewLbConstructor
 from local_solvers.atsp_3opt import Atsp3Opt
@@ -25,6 +26,12 @@ from local_solvers.atsp_aco import AtspAco
 from local_solvers.atsp_shift_insert import AtspShiftInsert
 
 Objective = int
+
+
+class Implementation(Enum):
+    NEW_LB_3_OPT = 1
+    NEW_LB_ACO = 2
+    NEW_LB_SHIFT_INSERT = 3
 
 
 class BaseSolution:
@@ -224,7 +231,7 @@ class Problem:
         """
 
         match imp:
-            case 1:
+            case Implementation.NEW_LB_3_OPT:
                 return SolutionNewLb3Opt(
                     problem=self,
                     visited_cities=[0],
@@ -232,7 +239,7 @@ class Problem:
                     total_distance=0,
                     lower_bound=self.lower_bound,
                 )
-            case 2:
+            case Implementation.NEW_LB_ACO:
                 return SolutionNewLbAco(
                     problem=self,
                     visited_cities=[0],
@@ -240,7 +247,7 @@ class Problem:
                     total_distance=0,
                     lower_bound=self.lower_bound,
                 )
-            case 3:
+            case Implementation.NEW_LB_SHIFT_INSERT:
                 return SolutionNewLbShiftInsert(
                     problem=self,
                     visited_cities=[0],

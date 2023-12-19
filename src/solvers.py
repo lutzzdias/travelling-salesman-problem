@@ -2,7 +2,7 @@ import math, operator, random, time
 from sys import stdin
 
 
-from travelling_salesman import Problem, BaseSolution, SolutionNewLb3Opt
+from travelling_salesman import Implementation, Problem, BaseSolution, SolutionNewLb3Opt
 from local_solvers.atsp_aco import LocalMoveAco
 
 
@@ -251,6 +251,6 @@ def ACO(solution: BaseSolution) -> BaseSolution:
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
-    solution = greedy_construction(problem, 3)
+    solution = greedy_construction(problem, Implementation.NEW_LB_SHIFT_INSERT)
     print(f"lb:  {solution.lower_bound()}")
     print(f"td:  {solution.objective()}")
