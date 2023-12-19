@@ -17,18 +17,14 @@
 
 from __future__ import annotations
 
-import random
-from collections.abc import Iterable
-from typing import Any, List, Optional, Set, TextIO, Tuple, TypeVar
-
-from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
+from typing import Any, List, Optional, Set, TextIO, Tuple
 
 from construction.new_lb_constructor import NewLbConstructor
 from local_solvers.atsp_3opt import Atsp3Opt
 from local_solvers.atsp_aco import AtspAco
+from local_solvers.atsp_shift_insert import AtspShiftInsert
 
 Objective = Any
-
 
 class BaseSolution:
     def __init__(self, *args, **kwargs):
@@ -87,6 +83,25 @@ class SolutionNewLb3Opt(BaseSolution, NewLbConstructor, Atsp3Opt):
         super().__init__(*args, **kwargs)
 
     def copy(self) -> SolutionNewLb3Opt:
+        """
+        Return a copy of this solution.
+
+        Note: changes to the copy must not affect the original
+        solution. However, this does not need to be a deepcopy.
+        """
+        return SolutionNewLb3Opt(
+            problem=self.problem,
+            visited_cities=self.visited_cities.copy(),
+            unvisited_cities=self.unvisited_cities.copy(),
+            total_distance=self.total_distance,
+            lower_bound=self.lower_bound_value,
+        )
+    
+class SolutionNewLbShiftInsert(BaseSolution, NewLbConstructor, AtspShiftInsert):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def copy(self) -> SolutionNewLbShiftInsert:
         """
         Return a copy of this solution.
 
@@ -217,6 +232,14 @@ class Problem:
                 )
             case 2:
                 return SolutionNewLbAco(
+                    problem=self,
+                    visited_cities=[0],
+                    unvisited_cities=set(range(1, self.dimension)),
+                    total_distance=0,
+                    lower_bound=self.lower_bound,
+                )
+            case 3:
+                return SolutionNewLbShiftInsert(
                     problem=self,
                     visited_cities=[0],
                     unvisited_cities=set(range(1, self.dimension)),
