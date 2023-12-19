@@ -39,7 +39,6 @@ def greedy_construction(problem: Problem, imp: int) -> BaseSolution:
             if increment < best_increment:
                 best_component = component
                 best_increment = increment
-
         solution.add(best_component)
         components_iterator = solution.add_moves()
         component = next(components_iterator, None)
@@ -252,6 +251,6 @@ def ACO(solution: BaseSolution) -> BaseSolution:
 if __name__ == "__main__":
     problem = Problem.from_textio(stdin)
 
-    solution = random_construction(problem, 3)
+    solution = greedy_construction(problem, 3)
     print(f"lb:  {solution.lower_bound()}")
     print(f"td:  {solution.objective()}")
