@@ -201,7 +201,7 @@ class Problem:
 
         return cls(dimension, distance_matrix)
 
-    def empty_solution(self, imp: int) -> Solution:
+    def empty_solution(self, imp: int) -> BaseSolution:
         """
         Create an empty solution (i.e. with no components).
         """
