@@ -1,5 +1,6 @@
 import random
 from typing import Iterable, Optional
+
 from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
 from interfaces.local_move import LocalMove
 from interfaces.local_optimization import LocalOptimization
@@ -41,7 +42,7 @@ class AtspShiftInsert(LocalOptimization):
             for destination in range(self.problem.dimension):
                 # returns all valid local moves
                 if self._is_move_valid(city_id, destination):
-                    yield LocalMove(city_id, destination)
+                    yield LocalMoveShiftInsert(city_id, destination)
 
     def random_local_move(self) -> Optional[LocalMove]:
         """
@@ -86,11 +87,17 @@ class AtspShiftInsert(LocalOptimization):
         self.lower_bound_value = -1
 
         city = self.visited_cities[lmove.city_index]
-        prev_city = self.visited_cities[lmove.city_index - 1]
-        next_city = self.visited_cities[lmove.city_index + 1]
+        prev_city = self.visited_cities[
+            (lmove.city_index - 1) % len(self.visited_cities)
+        ]
+        next_city = self.visited_cities[
+            (lmove.city_index + 1) % len(self.visited_cities)
+        ]
 
         dest = self.visited_cities[lmove.destination_index]
-        prev_dest = self.visited_cities[lmove.destination_index - 1]
+        prev_dest = self.visited_cities[
+            (lmove.destination_index - 1) % len(self.visited_cities)
+        ]
 
         self._calculate_local_move_distance(
             city, prev_city, next_city, dest, prev_dest, self.total_distance
@@ -154,16 +161,22 @@ class AtspShiftInsert(LocalOptimization):
         """
 
         city = self.visited_cities[lmove.city_index]
-        prev_city = self.visited_cities[lmove.city_index - 1]
-        next_city = self.visited_cities[lmove.city_index + 1]
+        prev_city = self.visited_cities[
+            (lmove.city_index - 1) % len(self.visited_cities)
+        ]
+        next_city = self.visited_cities[
+            (lmove.city_index + 1) % len(self.visited_cities)
+        ]
 
         dest = self.visited_cities[lmove.destination_index]
-        prev_dest = self.visited_cities[lmove.destination_index - 1]
+        prev_dest = self.visited_cities[
+            (lmove.destination_index - 1) % len(self.visited_cities)
+        ]
 
         total_distance = self.total_distance
 
-        self._calculate_local_move_distance(
+        result = self._calculate_local_move_distance(
             city, prev_city, next_city, dest, prev_dest, total_distance
         )
 
-        return total_distance - self.total_distance
+        return result - self.total_distance
