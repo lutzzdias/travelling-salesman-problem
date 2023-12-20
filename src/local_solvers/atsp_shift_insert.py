@@ -57,13 +57,13 @@ class AtspShiftInsert(LocalOptimization):
         dest = random.randint(0, self.problem.dimension - 1)
         final_dest = (city_index + dest) % self.problem.dimension
 
-        local_move = ILocalMove(city_index, final_dest)
+        local_move = LocalMoveShiftInsert(city_index, final_dest)
 
         while not self._is_move_valid(city_index, final_dest):
             dest = random.randint(0, self.problem.dimension - 1)
             final_dest = (city_index + dest) % self.problem.dimension
 
-            local_move = ILocalMove(city_index, final_dest)
+            local_move = LocalMoveShiftInsert(city_index, final_dest)
 
         return local_move
 

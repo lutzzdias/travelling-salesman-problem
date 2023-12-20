@@ -24,7 +24,7 @@ class LocalMove3Opt(ILocalMove):
 
 
 class Atsp3Opt(LocalOptimization):
-    def local_moves(self) -> Iterable[LocalMove3Opt]:
+    def local_moves(self) -> Iterable[ILocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves that can be applied to the solution
@@ -47,7 +47,7 @@ class Atsp3Opt(LocalOptimization):
 
                     yield local_move
 
-    def random_local_move(self) -> Optional[LocalMove3Opt]:
+    def random_local_move(self) -> Optional[ILocalMove]:
         """
         Return a random local move that can be applied to the solution.
 
@@ -79,7 +79,7 @@ class Atsp3Opt(LocalOptimization):
 
         return None
 
-    def random_local_moves_wor(self) -> Iterable[LocalMove3Opt]:
+    def random_local_moves_wor(self) -> Iterable[ILocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves (in random order) that can be applied to
@@ -93,7 +93,7 @@ class Atsp3Opt(LocalOptimization):
         for i in random_indexes:
             yield local_moves[i]
 
-    def step(self, lmove: LocalMove3Opt) -> None:
+    def step(self, lmove: ILocalMove) -> None:
         """
         Apply a local move to the solution.
 
@@ -127,7 +127,7 @@ class Atsp3Opt(LocalOptimization):
         self.total_distance -= distance_difference
         self.lower_bound_value = -1
 
-    def objective_incr_local(self, lmove: LocalMove3Opt) -> Optional[Objective]:
+    def objective_incr_local(self, lmove: ILocalMove) -> Optional[Objective]:
         """
         Return the objective value increment resulting from applying a
         local move. If the objective value is not defined after

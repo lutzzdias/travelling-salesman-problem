@@ -78,7 +78,7 @@ class AtspAco(LocalOptimization):
 
         return LocalMoveAco(cycle, total_length)
 
-    def local_moves(self) -> Iterable[LocalMoveAco]:
+    def local_moves(self) -> Iterable[ILocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves that can be applied to the solution
@@ -87,7 +87,7 @@ class AtspAco(LocalOptimization):
         with multiprocessing.Pool() as pool:
             return list(pool.map(self._local_move, range(self.ants_per_iteration)))
 
-    def step(self, lmoves: List[LocalMoveAco]) -> None:
+    def step(self, lmoves: List[ILocalMove]) -> None:
         """
         Apply a local move to the solution.
 
@@ -120,7 +120,7 @@ class AtspAco(LocalOptimization):
                 for i in range(dimension)
             ]
 
-    def objective_incr_local(self, lmove: LocalMoveAco) -> Optional[Objective]:
+    def objective_incr_local(self, lmove: ILocalMove) -> Optional[Objective]:
         """
         Return the objective value increment resulting from applying a
         local move. If the objective value is not defined after

@@ -30,7 +30,7 @@ class NewLbConstructor(Construction):
         """
         return self.lower_bound_value
 
-    def add_moves(self) -> Iterable[Component]:
+    def add_moves(self) -> Iterable[IComponent]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all components that can be added to the solution
@@ -39,7 +39,7 @@ class NewLbConstructor(Construction):
         for city in self.unvisited_cities:
             yield Component(self.visited_cities[-1], city)
 
-    def heuristic_add_move(self) -> Optional[Component]:
+    def heuristic_add_move(self) -> Optional[IComponent]:
         """
         Return the next component to be added based on some heuristic
         rule.
@@ -207,7 +207,7 @@ class NewLbConstructor(Construction):
 
         return lb, csi, cso
 
-    def objective_incr_add(self, component: Component) -> Optional[Objective]:
+    def objective_incr_add(self, component: IComponent) -> Optional[Objective]:
         """
         Return the objective value increment resulting from adding a
         component. If the objective value is not defined after adding the
@@ -215,7 +215,7 @@ class NewLbConstructor(Construction):
         """
         return self.problem.distance_matrix[component.arc[0]][component.arc[1]]
 
-    def lower_bound_incr_add(self, component: Component) -> Optional[Objective]:
+    def lower_bound_incr_add(self, component: IComponent) -> Optional[Objective]:
         """
         Return the lower bound increment resulting from adding a
         component. If the lower bound is not defined after adding the
