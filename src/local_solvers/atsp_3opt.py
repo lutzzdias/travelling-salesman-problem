@@ -1,15 +1,16 @@
+import random
+import time
 from collections.abc import Iterable
-from typing import Optional, Any, Tuple
-import random, time
+from typing import Any, Optional, Tuple
 
 from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
-from interfaces.local_move import LocalMove
+from interfaces.ilocal_move import ILocalMove
 from interfaces.local_optimization import LocalOptimization
 
 Objective = Any
 
 
-class LocalMove3Opt(LocalMove):
+class LocalMove3Opt(ILocalMove):
     def __init__(self, X1: int, X2: int, Y1: int, Y2: int, Z1: int, Z2: int):
         self.X1: int = X1
         self.X2: int = X2

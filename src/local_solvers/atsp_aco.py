@@ -1,16 +1,15 @@
-from collections.abc import Iterable
-from typing import Optional, Any, List
-import random
 import multiprocessing
+import random
+from collections.abc import Iterable
+from typing import Any, List, Optional
 
-from interfaces.local_move import LocalMove
+from interfaces.ilocal_move import ILocalMove
 from interfaces.local_optimization import LocalOptimization
-
 
 Objective = Any
 
 
-class LocalMoveAco(LocalMove):
+class LocalMoveAco(ILocalMove):
     def __init__(self, path: List[int], distance: int):
         self.path: List[int] = path
         self.distance: int = distance

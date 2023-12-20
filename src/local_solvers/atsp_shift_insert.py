@@ -1,13 +1,14 @@
 import random
 from typing import Iterable, Optional
+
 from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
-from interfaces.local_move import LocalMove
+from interfaces.ilocal_move import ILocalMove
 from interfaces.local_optimization import LocalOptimization
 
 Objective = int
 
 
-class LocalMoveShiftInsert(LocalMove):
+class LocalMoveShiftInsert(ILocalMove):
     def __init__(self, city_index: int, destination_index: int):
         self.city_index: int = city_index
         self.destination_index: int = destination_index
@@ -32,18 +33,19 @@ class AtspShiftInsert(LocalOptimization):
             and (city_index - 2) % self.problem.dimension != dest
         )
 
-    def local_moves(self) -> Iterable[LocalMove]:
+    def local_moves(self) -> Iterable[ILocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves that can be applied to the solution
         """
+
         for city_id in range(self.problem.dimension):
             for destination in range(self.problem.dimension):
                 # returns all valid local moves
                 if self._is_move_valid(city_id, destination):
-                    yield LocalMove(city_id, destination)
+                    yield LocalMoveShiftInsert(city_id, destination)
 
-    def random_local_move(self) -> Optional[LocalMove]:
+    def random_local_move(self) -> Optional[ILocalMove]:
         """
         Return a random local move that can be applied to the solution.
 
@@ -52,20 +54,20 @@ class AtspShiftInsert(LocalOptimization):
         """
         city_index = random.randint(0, self.problem.dimension - 1)
 
-        dest = random.randint(1, self.problem.dimension - 3)
+        dest = random.randint(0, self.problem.dimension - 1)
         final_dest = (city_index + dest) % self.problem.dimension
 
-        local_move = LocalMove(city_index, final_dest)
+        local_move = ILocalMove(city_index, final_dest)
 
         while not self._is_move_valid(city_index, final_dest):
-            dest = random.randint(1, self.problem.dimension - 3)
+            dest = random.randint(0, self.problem.dimension - 1)
             final_dest = (city_index + dest) % self.problem.dimension
 
-            local_move = LocalMove(city_index, final_dest)
+            local_move = ILocalMove(city_index, final_dest)
 
         return local_move
 
-    def random_local_moves_wor(self) -> Iterable[LocalMove]:
+    def random_local_moves_wor(self) -> Iterable[ILocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves (in random order) that can be applied to
@@ -75,7 +77,7 @@ class AtspShiftInsert(LocalOptimization):
         for i in sparse_fisher_yates_iter(len(local_moves)):
             yield local_moves[i]
 
-    def step(self, lmove: LocalMove) -> None:
+    def step(self, lmove: ILocalMove) -> None:
         """
         Apply a local move to the solution.
 
@@ -86,13 +88,13 @@ class AtspShiftInsert(LocalOptimization):
         self.lower_bound_value = -1
 
         city = self.visited_cities[lmove.city_index]
-        prev_city = self.visited_cities[lmove.city_index - 1]
-        next_city = self.visited_cities[lmove.city_index + 1]
+        prev_city = self.visited_cities[(lmove.city_index - 1) % self.problem.dimension]
+        next_city = self.visited_cities[(lmove.city_index + 1) % self.problem.dimension]
 
         dest = self.visited_cities[lmove.destination_index]
         prev_dest = self.visited_cities[lmove.destination_index - 1]
 
-        self._calculate_local_move_distance(
+        self.total_distance = self._calculate_local_move_distance(
             city, prev_city, next_city, dest, prev_dest, self.total_distance
         )
 
@@ -146,24 +148,25 @@ class AtspShiftInsert(LocalOptimization):
 
         return total_distance
 
-    def objective_incr_local(self, lmove: LocalMove) -> Optional[Objective]:
+    def objective_incr_local(self, lmove: ILocalMove) -> Optional[Objective]:
         """
         Return the objective value increment resulting from applying a
         local move. If the objective value is not defined after
         applying the local move return None.
         """
-
         city = self.visited_cities[lmove.city_index]
-        prev_city = self.visited_cities[lmove.city_index - 1]
-        next_city = self.visited_cities[lmove.city_index + 1]
+        prev_city = self.visited_cities[(lmove.city_index - 1) % self.problem.dimension]
+        next_city = self.visited_cities[(lmove.city_index + 1) % self.problem.dimension]
 
         dest = self.visited_cities[lmove.destination_index]
-        prev_dest = self.visited_cities[lmove.destination_index - 1]
+        prev_dest = self.visited_cities[
+            (lmove.destination_index - 1) % self.problem.dimension
+        ]
 
         total_distance = self.total_distance
 
-        self._calculate_local_move_distance(
+        result = self._calculate_local_move_distance(
             city, prev_city, next_city, dest, prev_dest, total_distance
         )
 
-        return total_distance - self.total_distance
+        return self.total_distance - result
