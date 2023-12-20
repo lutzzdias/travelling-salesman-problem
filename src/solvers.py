@@ -1,9 +1,11 @@
-import math, operator, random, time
+import math
+import operator
+import random
+import time
 from sys import stdin
 
-
-from travelling_salesman import Implementation, Problem, BaseSolution, SolutionNewLb3Opt
 from local_solvers.atsp_aco import LocalMoveAco
+from travelling_salesman import BaseSolution, Implementation, Problem, SolutionNewLb3Opt
 
 
 # Completely random construction
@@ -254,3 +256,7 @@ if __name__ == "__main__":
     solution = greedy_construction(problem, Implementation.NEW_LB_SHIFT_INSERT)
     print(f"lb:  {solution.lower_bound()}")
     print(f"td:  {solution.objective()}")
+
+    local_search = first_improvement(solution)
+    print(f"lb:  {local_search.lower_bound()}")
+    print(f"td:  {local_search.objective()}")

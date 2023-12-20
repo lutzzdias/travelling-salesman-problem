@@ -1,15 +1,16 @@
+import random
+import time
 from collections.abc import Iterable
-from typing import Optional, Any, Tuple
-import random, time
+from typing import Any, Optional, Tuple
 
 from helpers.sparse_fisher_yates import sparse_fisher_yates_iter
-from interfaces.local_move import LocalMove
+from interfaces.ilocal_move import ILocalMove
 from interfaces.local_optimization import LocalOptimization
 
 Objective = Any
 
 
-class LocalMove3Opt(LocalMove):
+class LocalMove3Opt(ILocalMove):
     def __init__(self, X1: int, X2: int, Y1: int, Y2: int, Z1: int, Z2: int):
         self.X1: int = X1
         self.X2: int = X2
@@ -23,7 +24,7 @@ class LocalMove3Opt(LocalMove):
 
 
 class Atsp3Opt(LocalOptimization):
-    def local_moves(self) -> Iterable[LocalMove3Opt]:
+    def local_moves(self) -> Iterable[ILocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves that can be applied to the solution
@@ -46,7 +47,7 @@ class Atsp3Opt(LocalOptimization):
 
                     yield local_move
 
-    def random_local_move(self) -> Optional[LocalMove3Opt]:
+    def random_local_move(self) -> Optional[ILocalMove]:
         """
         Return a random local move that can be applied to the solution.
 
@@ -78,7 +79,7 @@ class Atsp3Opt(LocalOptimization):
 
         return None
 
-    def random_local_moves_wor(self) -> Iterable[LocalMove3Opt]:
+    def random_local_moves_wor(self) -> Iterable[ILocalMove]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all local moves (in random order) that can be applied to
@@ -92,7 +93,7 @@ class Atsp3Opt(LocalOptimization):
         for i in random_indexes:
             yield local_moves[i]
 
-    def step(self, lmove: LocalMove3Opt) -> None:
+    def step(self, lmove: ILocalMove) -> None:
         """
         Apply a local move to the solution.
 
@@ -126,7 +127,7 @@ class Atsp3Opt(LocalOptimization):
         self.total_distance -= distance_difference
         self.lower_bound_value = -1
 
-    def objective_incr_local(self, lmove: LocalMove3Opt) -> Optional[Objective]:
+    def objective_incr_local(self, lmove: ILocalMove) -> Optional[Objective]:
         """
         Return the objective value increment resulting from applying a
         local move. If the objective value is not defined after

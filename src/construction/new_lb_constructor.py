@@ -1,13 +1,13 @@
 from collections.abc import Iterable
 from typing import List, Optional, Tuple
-from interfaces.component import Component
 
 from interfaces.construction import Construction
+from interfaces.icomponent import IComponent
 
 Objective = int | float
 
 
-class NewLbComponent(Component):
+class Component(IComponent):
     def __init__(self, source: int, dest: int):
         self.arc = (source, dest)
 
@@ -16,12 +16,12 @@ class NewLbComponent(Component):
 
 
 class NewLbConstructor(Construction):
-    def components(self) -> Iterable[Component]:
+    def components(self) -> Iterable[IComponent]:
         """
         Returns an iterable to the components of a solution
         """
         for i in range(0, len(self.visited_cities) - 1):
-            yield NewLbComponent(self.visited_cities[i], self.visited_cities[i + 1])
+            yield Component(self.visited_cities[i], self.visited_cities[i + 1])
 
     def lower_bound(self) -> Optional[Objective]:
         """
@@ -30,23 +30,23 @@ class NewLbConstructor(Construction):
         """
         return self.lower_bound_value
 
-    def add_moves(self) -> Iterable[NewLbComponent]:
+    def add_moves(self) -> Iterable[IComponent]:
         """
         Return an iterable (generator, iterator, or iterable object)
         over all components that can be added to the solution
         """
 
         for city in self.unvisited_cities:
-            yield NewLbComponent(self.visited_cities[-1], city)
+            yield Component(self.visited_cities[-1], city)
 
-    def heuristic_add_move(self) -> Optional[NewLbComponent]:
+    def heuristic_add_move(self) -> Optional[IComponent]:
         """
         Return the next component to be added based on some heuristic
         rule.
         """
         raise NotImplementedError
 
-    def add(self, component: Component) -> None:
+    def add(self, component: IComponent) -> None:
         """
         Add a component to the solution.
 
@@ -207,7 +207,7 @@ class NewLbConstructor(Construction):
 
         return lb, csi, cso
 
-    def objective_incr_add(self, component: NewLbComponent) -> Optional[Objective]:
+    def objective_incr_add(self, component: IComponent) -> Optional[Objective]:
         """
         Return the objective value increment resulting from adding a
         component. If the objective value is not defined after adding the
@@ -215,7 +215,7 @@ class NewLbConstructor(Construction):
         """
         return self.problem.distance_matrix[component.arc[0]][component.arc[1]]
 
-    def lower_bound_incr_add(self, component: NewLbComponent) -> Optional[Objective]:
+    def lower_bound_incr_add(self, component: IComponent) -> Optional[Objective]:
         """
         Return the lower bound increment resulting from adding a
         component. If the lower bound is not defined after adding the
