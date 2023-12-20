@@ -17,8 +17,8 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Set, TextIO, Tuple
 from enum import Enum
+from typing import Any, List, Optional, Set, TextIO, Tuple
 
 from construction.new_lb_constructor import NewLbConstructor
 from local_solvers.atsp_3opt import Atsp3Opt
